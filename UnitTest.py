@@ -3,9 +3,19 @@ import whitespace_formatter
 import shutil
 import os
 
+class FakeLogger(whitespace_formatter.Logger):
+    def __init__(self):
+        self.entries = []
+
+    def log(self, message):
+        self.entries.append(message)
+
+    def log_verbose(self, message):
+        self.entries.append(message)
+
 class LineConformerUnitTest(unittest.TestCase):
     def setUp(self):
-        self.conformer = whitespace_formatter.LineConformer()
+        self.conformer = whitespace_formatter.LineConformer(FakeLogger())
 
     def test_trim_trailing_removes_whitespace_from_eol(self):
         text = self.conformer.trim_trailing("  abc \t")
@@ -34,7 +44,7 @@ class LineConformerUnitTest(unittest.TestCase):
 
 class FileConformerUnitTest(unittest.TestCase):
     def setUp(self):
-        self.conformer = whitespace_formatter.FileConformer()
+        self.conformer = whitespace_formatter.FileConformer(FakeLogger())
         self.test_file_path = "__testfile"
 
     def tearDown(self):
@@ -91,7 +101,7 @@ class FileConformerUnitTest(unittest.TestCase):
 
 class FileProcessorUnitTest(unittest.TestCase):
     def setUp(self):
-        self.processor = whitespace_formatter.FileProcessor()
+        self.processor = whitespace_formatter.FileProcessor(FakeLogger())
         self.test_dir_path = "__testdir"
         self.test_file_path = self.get_test_file_path("a")
         self.tearDown()
@@ -118,7 +128,7 @@ class FileProcessorUnitTest(unittest.TestCase):
         self.assertEqual(0, len(file_paths))
 
     def test_file_files_fails_for_no_match(self):
-        self.assertRaises(FileNotFoundError, self.processor.find_files, ["notthere"], [])
+        self.assertRaises(whitespace_formatter.AppException, self.processor.find_files, ["notthere"], [])
 
     def test_file_files_finds_file_by_name(self):
         with open(self.test_file_path, "w") as f: f.write("xxx")
@@ -170,7 +180,7 @@ class FileProcessorUnitTest(unittest.TestCase):
     def test_file_files_fails_for_binary_file(self):
         with open(self.test_file_path, "w") as f: f.write("a\x00a")
         
-        self.assertRaises(ValueError, self.processor.find_files, [self.test_file_path], [])
+        self.assertRaises(whitespace_formatter.AppException, self.processor.find_files, [self.test_file_path], [])
 
     def test_file_files_does_not_match_binary_file(self):
         with open(self.test_file_path, "w") as f: f.write("x\x00x")
