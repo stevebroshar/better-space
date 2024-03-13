@@ -188,9 +188,7 @@ if __name__ == '__main__':
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description="Modifies text files to replace tabs with spaces (or vise versa), trims whitespace from the end of each line and replace tabs in string literals",
             epilog=f"""
-    Notes
-     o Fails for a binary file that is specified directly (path); ignores binary files when matching (--pattern)
-     o Trims trailing whitespace unless specify --leave-trailing
+    Note: Fails for binary files specified via path; ignores binary files when matching (--pattern)
 
     Terms
      o detab: replace tabs with spaces
@@ -204,41 +202,38 @@ if __name__ == '__main__':
      o detab-leading: Replaces tabs with spaces before the first non-whitespace character
      o detab-text: Replaces tabs with spaces after the first and before the last non-whitespace character; no special treament for string literals
      o detab-code: Replaces tabs with spaces after the first and before the last non-whitespace character with special handing for string literals
-        Requires: [pattern: ([quote-char, [quote-escape]], [line-comment], [comment-start, comment-end])]
-
-     > script detab-leading paths
-     > script detab-text paths
-     > script detab-code --quote-char DQ --quote-escape BS --line-comment // --comment-start /* --comment-end */ paths
-     > script --ignore-trailing
 
     Examples
 
     > {script_name} --modify a.cpp *.h
+
     For file a.cpp and files matching *.h, replaces leading tabs with spaces and trims whitespace from the end of each line.
     Processes file a.cpp and files matching *.h.
     Fails if a.cpp not found or no files matching *.h.
     Will update modified files.
 
     > {script_name} --modify src
+
     For each text file in the directory tree src, replaces leading tabs with spaces and trims whitespace from the end of each line.
     Ignores binary files in the directory tree.
     Fails if src not found, but not if it is an empty directory.
     Will update modified files.
 
     > {script_name} --pattern *.js --pattern *.html src
+
     Processes files in src matching *.js or *.html instead of all text files
 
-    FUTURE
-    > {script_name} a.c detab-text
+    FUTURE> {script_name} a.c detab-text
+
     Replaces tabs with spaces throughout the file.
     If the input is source code, tabs in string literals are replaced with spaces which is probably not desirable.
 
-    FUTURE
-    > {script_name} a.c detab-code --string-tab \\t --string-delimiter DQ --string-escape BS --line-comment // --comment-start /* --comment-end */
+    FUTURE> {script_name} a.c detab-code --string-tab \\t --string-delimiter DQ --string-escape BS --line-comment // --comment-start /* --comment-end */
+
     Replaces tabs with spaces throughout the file except for string literals where tabs are replaced with the value of string-tab.
 
-    FUTURE
-    > {script_name} abc.cpp entab-leading
+    FUTURE> {script_name} abc.cpp entab-leading
+        
     Replaces leading spaces with tabs and trims whitespace from the end of each line.
     """)
         parser.add_argument("-m", "--modify", action="store_true", 
@@ -246,13 +241,9 @@ if __name__ == '__main__':
         parser.add_argument("-v", "--verbose", action="store_true", 
                             help="verbose logging")
         parser.add_argument("--leave-trailing", action="store_true", 
-                            help="leave any trailing whitespace")
+                            help="leave any trailing whitespace; default is to trim")
         parser.add_argument("-s", "--tab-size", type=int, metavar="SIZE", 
                             help="number of spaces for a tab")
-        parser.add_argument("--string-tab", metavar="TEXT",
-                            help="text to replace a string literal tab with; defaults to '\\t' which is valid for many languages include C/C++")
-        parser.add_argument("--string-delimiter", metavar="DELIM", 
-                            help="text that delimits a string literal; defaults to double-quote (\")")
         parser.add_argument("-p", "--pattern", metavar="PATTERN", action='append',
                             help="pattern to match files in a directory")
         parser.add_argument("path", nargs="+", 
@@ -265,6 +256,19 @@ if __name__ == '__main__':
         entab_leading_parser = subparsers.add_parser('entab-leading')
         entab_text_parser = subparsers.add_parser('entab-text')
         entab_code_parser = subparsers.add_parser('entab-code')
+
+        detab_code_parser.add_argument("--string-delimiter", metavar="TEXT", 
+                            help="text that delimits a string literal; defaults to double-quote (\")")
+        detab_code_parser.add_argument("--string-delimiter-escape", metavar="TEXT", 
+                            help="text that marks a string-delimiter character as _not_ a delimitor in a string literal; defaults to backslash (\\)")
+        detab_code_parser.add_argument("--string-tab", metavar="TEXT",
+                            help="text to replace tabs in string literals; defaults to '\\t'")
+        detab_code_parser.add_argument("--line-comment", metavar="TEXT", 
+                            help="text marks the start of a line comment; to the end of the line; defaults to '//'")
+        detab_code_parser.add_argument("--start-comment", metavar="TEXT", 
+                            help="text that delimits the start of a potentially multi-line comment; defaults to '/*'")
+        detab_code_parser.add_argument("--end-comment", metavar="TEXT", 
+                            help="text that delimits the end of a potentially multi-line comment; defaults to '*/'")
 
         args = parser.parse_args()
 
