@@ -16,19 +16,23 @@ Python 3
 
 ## Version 1
 
-Supports detab leading text and trim trailing whitespace; UTF-8 only
+Supports de-tabbing leading text
+
+Supports trimming trailing whitespace
+
+Supports UTF-8 and UTF-16
+
+Detects binary (for ignore or error)
 
 ## TODO
 
-Support UTF-16
+Support de-tabbing non-leading text
 
-Support detab non-leading text
+Support de-tabbing string literals
 
-Support detab string literals
+Support en-tabbing leading text
 
-Support entab leading text
+Support en-tabbing non-leading text
 
-Support entab non-leading text
-
-Support entab string literals
+Support en-tabbing string literals
 

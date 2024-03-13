@@ -301,7 +301,7 @@ if __name__ == '__main__':
                 modified_count += 1
                 if args.modify:
                     logger.log(f"{file_path}: updated")
-                    file_conformer.save_to_file(file_path)
+                    file_conformer.save_to_file()
                 else:
                     logger.log(f"{file_path}: content modified but save not enabled")
             else:
