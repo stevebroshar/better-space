@@ -32,7 +32,7 @@ class Logger(object):
 
 # Provides for editing the content of a file
 class FileConformer(object):
-    __slots__ = "__file_text", "__text", "__file_path", "__logger"
+    __slots__ = "__file_text", "__text", "__file_path", "__logger", "__encoding"
 
     def __init__(self, logger):
         self.__logger = logger
@@ -51,17 +51,18 @@ class FileConformer(object):
         return self.__text != self.__file_text
 
     # Loads and caches the content of a file
-    def load_from_file(self, file_path):
+    def load_from_file(self, file_path, encoding):
         self.__file_path = file_path
-        with open(file_path, "r") as f:
+        self.__encoding = encoding
+        with open(file_path, "r", encoding=encoding) as f:
             self.__file_text = self.__text = f.read()
 
-    # Saves the cached file content to the file from which it was loaded
+    # Saves the cached file content to the file from which it was loaded using the same encoding
     def save_to_file(self):
         if not self.__file_path:
             raise RuntimeError("Must load file first")
-        #self.__logger.log_verbose(f"Saving {self.__file_path}")
-        with open(self.__file_path, "w") as f:
+        self.__logger.log_debug(f"Saving {self.__file_path} encoding:{self.__encoding}")
+        with open(self.__file_path, "w", encoding=self.__encoding) as f:
             f.write(self.__text)
 
     def __apply_operations(self, line, operations):
@@ -137,17 +138,17 @@ class FileProcessor(object):
         next_recursive_depth = recurse_depth
         if not next_recursive_depth == None:
             next_recursive_depth =- 1
-        file_paths = set()
+        selected_files_by_path = dict()
         for path_spec in path_specs:
             paths = glob.glob(path_spec)
             if len(paths) == 0:
                 raise AppException(f"No files selected by '{path_spec}'")
             for path in paths:
                 if os.path.isfile(path):
-                    if self.is_binary(path):
-                        raise AppException(f"Binary file '{path}'")
-                    else:
-                        file_paths.add(path)
+                    encoding = self.detect_encoding(path)
+                    if not encoding:
+                        raise AppException(f"File is not readable text '{path}'; is binary or an unknown text encoding")
+                    selected_files_by_path[path] = encoding
                 elif os.path.isdir(path):
                     if recurse_depth == None or recurse_depth > 0:
                         if match_patterns == None or len(match_patterns) == 0:
@@ -157,21 +158,27 @@ class FileProcessor(object):
                             sub_paths = glob.glob(sub_pattern)
                             non_binary_sub_paths = []
                             for sub_path in sub_paths:
-                                if os.path.isfile(sub_path) and self.is_binary(sub_path):
-                                    self.__logger.log(f"{sub_path}: ignoring since seem like a binary")
+                                if os.path.isfile(sub_path) and not self.detect_encoding(sub_path):
+                                    self.__logger.log(f"{sub_path}: ignoring since is not readabile text; is binary or an unknown text encoding")
                                 else:
                                     non_binary_sub_paths.append(sub_path)
-                            inner_paths = self.find_files(non_binary_sub_paths, match_patterns, next_recursive_depth)
-                            file_paths.update(inner_paths)
+                            decendent_files = self.find_files(non_binary_sub_paths, match_patterns, next_recursive_depth)
+                            selected_files_by_path.update(decendent_files)
                 else:
                     raise RuntimeError("Unexpected")
-        return list(file_paths)
-
-    # Indicates whether a file has binary content based on whether it contains a null char
-    def is_binary(self, file_path):
-        with open(file_path,'r') as f:
-            file_bytes = f.read(512)
-        return "\x00" in file_bytes
+        return selected_files_by_path
+    
+    # Returns the first encoding that works for the file or None if none work which means the file is probably binary.
+    def detect_encoding(self, file_path):
+        encodings = ["utf-16", "utf-8"]
+        for encoding in encodings:
+            try:
+                with open(file_path, encoding=encoding) as f:
+                    f.read(512)
+                return encoding
+            except:
+                pass
+        return None
     
 if __name__ == '__main__':
     try:
@@ -282,13 +289,13 @@ if __name__ == '__main__':
         #     operations.append(lambda line: line_conformer.detab_code(line, tab_size, string_literal_delim_text, string_literal_tab_text, line_comment, comment_start, comment_end))
 
         file_processor = FileProcessor(logger)
-        file_paths = file_processor.find_files(args.path, args.pattern)
+        selected_files_by_path = file_processor.find_files(args.path, args.pattern)
 
         modified_count = 0
         file_conformer = FileConformer(logger)
-        for file_path in file_paths:
+        for file_path,encoding in selected_files_by_path.items():
             logger.log_debug(f"Start: {file_path}")
-            file_conformer.load_from_file(file_path)
+            file_conformer.load_from_file(file_path, encoding)
             file_conformer.conform_lines(operations)
             if file_conformer.is_modified:
                 modified_count += 1
@@ -301,6 +308,6 @@ if __name__ == '__main__':
                 logger.log(f"{file_path}: no changes")
             logger.log_debug(f"End: {file_path}")
 
-        logger.log(f"\nFiles processed: {len(file_paths)}; with changes: {modified_count}")
+        logger.log(f"\nFiles processed: {len(selected_files_by_path)}; with changes: {modified_count}")
     except AppException as e:
         exit(e)

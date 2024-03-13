@@ -16,9 +16,11 @@ Python 3
 
 ## Version 1
 
-Supports detab leading text and trim trailing whitespace
+Supports detab leading text and trim trailing whitespace; UTF-8 only
 
 ## TODO
+
+Support UTF-16
 
 Support detab non-leading text
 
