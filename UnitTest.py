@@ -5,12 +5,10 @@ import os
 
 class FakeLogger(whitespace_formatter.Logger):
     def __init__(self):
+        super().__init__()
         self.entries = []
 
     def log(self, message):
-        self.entries.append(message)
-
-    def log_verbose(self, message):
         self.entries.append(message)
 
 class LineConformerUnitTest(unittest.TestCase):
@@ -89,15 +87,19 @@ class FileConformerUnitTest(unittest.TestCase):
         with open(self.test_file_path) as f: text = f.read()
         self.assertEqual("Def456", text)
 
-    def test_save_to_file_does_not_modify_file_for_unmodified_text(self):
+    def test_is_modified_is_false_for_unmodified_text(self):
         with open(self.test_file_path, "w") as f: f.write("Abc123")
         self.conformer.load_from_file(self.test_file_path)
-        with open(self.test_file_path, "w") as f: f.write("xyz")
 
-        self.conformer.save_to_file()
+        self.assertEqual(False, self.conformer.is_modified)
 
-        with open(self.test_file_path) as f: text = f.read()
-        self.assertEqual("xyz", text)
+    def test_is_modified_is_true_for_modified_text(self):
+        with open(self.test_file_path, "w") as f: f.write("Abc123")
+        self.conformer.load_from_file(self.test_file_path)
+
+        self.conformer.text = "different"
+
+        self.assertEqual(True, self.conformer.is_modified)
 
 class FileProcessorUnitTest(unittest.TestCase):
     def setUp(self):

@@ -6,10 +6,11 @@ class AppException(Exception):
     __slots__ = []
 
 class Logger(object):
-    __slots__ = ["__is_verbose_enabled"]
+    __slots__ = ["__is_verbose_enabled", "__is_debug_enabled"]
 
     def __init__(self):
         self.__is_verbose_enabled = False
+        self.__is_debug_enabled = False
 
     @property
     def is_verbose_enabled(self):
@@ -24,6 +25,10 @@ class Logger(object):
     def log_verbose(self, message):
         if self.__is_verbose_enabled:
             self.log(message)
+
+    def log_debug(self, message):
+        if self.__is_debug_enabled:
+            self.log("DEBUG: " +message)
 
 # Provides for editing the content of a file
 class FileConformer(object):
@@ -41,6 +46,10 @@ class FileConformer(object):
     def text(self, to):
         self.__text = to
 
+    @property
+    def is_modified(self):
+        return self.__text != self.__file_text
+
     # Loads and caches the content of a file
     def load_from_file(self, file_path):
         self.__file_path = file_path
@@ -51,12 +60,9 @@ class FileConformer(object):
     def save_to_file(self):
         if not self.__file_path:
             raise RuntimeError("Must load file first")
-        if self.__text != self.__file_text:
-            self.__logger.log(f"Saving {self.__file_path}")
-            with open(self.__file_path, "w") as f:
-                f.write(self.__text)
-        else:
-            self.__logger.log_verbose(f"No changes: {self.__file_path}")
+        #self.__logger.log_verbose(f"Saving {self.__file_path}")
+        with open(self.__file_path, "w") as f:
+            f.write(self.__text)
 
     def __apply_operations(self, line, operations):
         for operation in operations:
@@ -64,6 +70,7 @@ class FileConformer(object):
         return line
 
     # Applies a series of operations to the lines of the loaded cached content
+    # An operation is a function that accepts a line of text and returns the conformed text
     def conform_lines(self, operations):
         lines = self.__text.split("\n")
         lines = [self.__apply_operations(line, operations) for line in lines]
@@ -91,7 +98,7 @@ class LineConformer(object):
     def trim_trailing(self, line):
         result = line.rstrip()
         if result != line:
-            self.__logger.log_verbose("Trimmed line")
+            self.__logger.log_debug("Trimmed line")
         return result
 
     # Replaces tabs in leading whitespace with spaces
@@ -151,8 +158,7 @@ class FileProcessor(object):
                             non_binary_sub_paths = []
                             for sub_path in sub_paths:
                                 if os.path.isfile(sub_path) and self.is_binary(sub_path):
-                                    #pass
-                                    self.__logger.log(f"Ignoring binary file '{sub_path}'")
+                                    self.__logger.log(f"{sub_path}: ignoring since seem like a binary")
                                 else:
                                     non_binary_sub_paths.append(sub_path)
                             inner_paths = self.find_files(non_binary_sub_paths, match_patterns, next_recursive_depth)
@@ -170,56 +176,72 @@ class FileProcessor(object):
 if __name__ == '__main__':
     try:
         script_name = os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]
-        supported_feature_names = ["conform-whitespace", "detab-leading", "trim-trailing", "detab-strings"]
-        default_features = ["conform-whitespace", "trim-trailing"]
-
-        #c_extentions = "c;cc;cpp;cs;cxx;h;hpp;hxx"
-
         parser = argparse.ArgumentParser(
             #formatter_class=argparse.RawTextHelpFormatter,
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description="Modifies text files to replace tabs with spaces (or vise versa), trims whitespace from the end of each line and replace tabs in string literals",
             epilog=f"""
-    Note: Fails for a binary file that is specified directly; binary files found by matching are ignored
+    Notes
+     o Fails for a binary file that is specified directly (path); ignores binary files when matching (--pattern)
+     o Trims trailing whitespace unless specify --leave-trailing
+
+    Terms
+     o detab: replace tabs with spaces
+     o entab: replace spaces with tabs
+     o leading: whitespace before first non-whitespace char of a line
+     o trailing: whitespace after last non-whitespace char of a line
+     o text: a flat text file
+     o code: source code; also a flat text file
+
+    Operations
+     o detab-leading: Replaces tabs with spaces before the first non-whitespace character
+     o detab-text: Replaces tabs with spaces after the first and before the last non-whitespace character; no special treament for string literals
+     o detab-code: Replaces tabs with spaces after the first and before the last non-whitespace character with special handing for string literals
+        Requires: [pattern: ([quote-char, [quote-escape]], [line-comment], [comment-start, comment-end])]
+
+     > script detab-leading paths
+     > script detab-text paths
+     > script detab-code --quote-char DQ --quote-escape BS --line-comment // --comment-start /* --comment-end */ paths
+     > script --ignore-trailing
 
     Examples
 
-    > {script_name} src --modify
-    For directory src, replaces tabs with spaces and trims whitespace from end of lines for each matching file in the directory tree.
-    Since --strings is not used, sting literals are not modified.
+    > {script_name} --modify a.cpp *.h
+    For file a.cpp and files matching *.h, replaces leading tabs with spaces and trims whitespace from the end of each line.
+    Processes file a.cpp and files matching *.h.
+    Fails if a.cpp not found or no files matching *.h.
+    Will update modified files.
 
-    > {script_name} src --modify --pattern *.js --pattern *.html
+    > {script_name} --modify src
+    For each text file in the directory tree src, replaces leading tabs with spaces and trims whitespace from the end of each line.
+    Ignores binary files in the directory tree.
+    Fails if src not found, but not if it is an empty directory.
+    Will update modified files.
+
+    > {script_name} --pattern *.js --pattern *.html src
     Processes files in src matching *.js or *.html instead of all text files
-    Since --strings is not used, sting literals are not modified.
 
-    > {script_name} --modify a.cpp b.cpp *.h
-    Replaces tabs with spaces and trims whitespace from end of lines for files a.cpp, b.cpp and files matching *.h
+    FUTURE
+    > {script_name} a.c detab-text
+    Replaces tabs with spaces throughout the file.
+    If the input is source code, tabs in string literals are replaced with spaces which is probably not desirable.
 
-    > {script_name} --modify --to-tabs abc.cpp
-    Replaces spaces with tabs and trims whitespace from the end of each line.
+    FUTURE
+    > {script_name} a.c detab-code --string-tab \\t --string-delimiter DQ --string-escape BS --line-comment // --comment-start /* --comment-end */
+    Replaces tabs with spaces throughout the file except for string literals where tabs are replaced with the value of string-tab.
 
-    > {script_name} --modify --feature conform-whitespace abc.cpp
-    Replaces tabs with spaces but leaves end-of-line whitespace
-
-    > {script_name} --modify --feature detab-leading --feature trim-trailing abc.cpp
-    Replaces tabs used for indenting code (leaving other tabs) and trims end-of-line whitespace
-
-    > {script_name} --modify a.html --feature detab-strings
-    Replaces tabs in double-quoted string literals with '\\t'. Does not replace other tabs or trim end-of-line.
-
-    > {script_name} --modify a.html --feature detab-strings --string-literal-tab "&#9;" --string-literal-delimiter "'"
-    Finds string literals as text between matching single quotes and replaces each tab with "&#9;"
+    FUTURE
+    > {script_name} abc.cpp entab-leading
+    Replaces leading spaces with tabs and trims whitespace from the end of each line.
     """)
         parser.add_argument("-m", "--modify", action="store_true", 
-                            help="modify files instead of only logging changes")
+                            help="save modified files; not saved by default")
         parser.add_argument("-v", "--verbose", action="store_true", 
                             help="verbose logging")
-        parser.add_argument("-t", "--to-tabs", action="store_true", 
-                            help="convert spaces to tabs instead of tabs to spaces")
+        parser.add_argument("--leave-trailing", action="store_true", 
+                            help="leave any trailing whitespace")
         parser.add_argument("-s", "--tab-size", type=int, metavar="SIZE", 
                             help="number of spaces for a tab")
-        parser.add_argument("-f", "--feature", action='append', metavar="FEATURE", 
-                            help=f"selects a feature: {', '.join(supported_feature_names)}; default when none specified: {', '.join(default_features)}; ")
         parser.add_argument("--string-tab", metavar="TEXT",
                             help="text to replace a string literal tab with; defaults to '\\t' which is valid for many languages include C/C++")
         parser.add_argument("--string-delimiter", metavar="DELIM", 
@@ -228,19 +250,19 @@ if __name__ == '__main__':
                             help="pattern to match files in a directory")
         parser.add_argument("path", nargs="+", 
                             help="file or directory to process")
-        args = parser.parse_args()
 
-        feature_names = default_features
-        if args.feature:
-            feature_names = args.feature
-        for feature_name in feature_names:
-            if not feature_name in supported_feature_names:
-                exit(f"Unknown feature: '{feature_name}'")
+        subparsers = parser.add_subparsers(required=False, dest="command")
+        detab_leading_parser = subparsers.add_parser('detab-leading')
+        detab_text_parser = subparsers.add_parser('detab-text')
+        detab_code_parser = subparsers.add_parser('detab-code')
+        entab_leading_parser = subparsers.add_parser('entab-leading')
+        entab_text_parser = subparsers.add_parser('entab-text')
+        entab_code_parser = subparsers.add_parser('entab-code')
+
+        args = parser.parse_args()
 
         logger = Logger()
         logger.is_verbose_enabled = args.verbose
-
-        logger.log(f"Selected features: {', '.join(feature_names)}")
 
         tab_size = args.tab_size if args.tab_size else 4
         string_literal_delim_text = args.string_delimiter if args.string_delimiter else '"'
@@ -248,23 +270,37 @@ if __name__ == '__main__':
 
         line_conformer = LineConformer(logger)
         operations = []
-        # if "conform-whitespace" in feature_names:
-        #     operations.append(line_conformer.detab)
-        if "trim-trailing" in feature_names:
+        if not args.leave_trailing:
             operations.append(line_conformer.trim_trailing)
-        if "detab-leading" in feature_names:
-            operations.append(line_conformer.detab_leading)
-        # if "detab-strings" in feature_names:
-        #     operations.append(lambda: line_conformer.detab_strings(string_literal_delim_text, string_literal_tab_text))
+        if not args.command or args.command == "detab-leading":
+            operations.append(lambda line: line_conformer.detab_leading(line, tab_size))
+        else:
+            exit(f"Command '{args.command}' is not supported")
+        # if args.command == "detab-text":
+        #     operations.append(lambda line: line_conformer.detab_text(line, tab_size))
+        # if args.command == "detab-code":
+        #     operations.append(lambda line: line_conformer.detab_code(line, tab_size, string_literal_delim_text, string_literal_tab_text, line_comment, comment_start, comment_end))
 
         file_processor = FileProcessor(logger)
         file_paths = file_processor.find_files(args.path, args.pattern)
 
+        modified_count = 0
         file_conformer = FileConformer(logger)
         for file_path in file_paths:
+            logger.log_debug(f"Start: {file_path}")
             file_conformer.load_from_file(file_path)
             file_conformer.conform_lines(operations)
-            if args.modify:
-                file_conformer.save_to_file(file_path)
+            if file_conformer.is_modified:
+                modified_count += 1
+                if args.modify:
+                    logger.log(f"{file_path}: updated")
+                    file_conformer.save_to_file(file_path)
+                else:
+                    logger.log(f"{file_path}: content modified but save not enabled")
+            else:
+                logger.log(f"{file_path}: no changes")
+            logger.log_debug(f"End: {file_path}")
+
+        logger.log(f"\nFiles processed: {len(file_paths)}; with changes: {modified_count}")
     except AppException as e:
         exit(e)
