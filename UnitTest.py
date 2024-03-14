@@ -4,6 +4,7 @@ import os
 import unittest
 
 TAB = "\t"
+SPACE = " "
 
 class FakeLogger(whitespace_formatter.Logger):
     def __init__(self):
@@ -18,15 +19,23 @@ class LineConformerUnitTest(unittest.TestCase):
         self.conformer = whitespace_formatter.LineConformer()
         self.log = lambda message: message
 
+    #
+    # trim_trailing
+    #
+
     def test_trim_trailing_removes_whitespace_from_eol(self):
         text = self.conformer.trim_trailing("  abc \t", self.log)
 
         self.assertEqual("  abc", text)
 
-    def test_detab_leading_replaces_tab_with_4_spaces(self):
+    #
+    # detab_leading
+    #
+
+    def test_detab_leading_replaces_leading_tab_with_spaces(self):
         text = self.conformer.detab_leading("\ta", self.log, 4)
 
-        self.assertEqual(" "*4 + "a", text)
+        self.assertEqual(SPACE*4 + "a", text)
 
     def test_detab_leading_leaves_non_leading_tabs(self):
         text = self.conformer.detab_leading("a\tb\t", self.log, 4)
@@ -36,22 +45,40 @@ class LineConformerUnitTest(unittest.TestCase):
     def test_detab_leading_adds_spaces_for_indent_that_is_space_and_tab(self):
         text = self.conformer.detab_leading(" \ta", self.log, 4)
 
-        self.assertEqual(" "*4 + "a", text)
+        self.assertEqual(SPACE*4 + "a", text)
 
     def test_detab_leading_adds_spaces_for_indent_that_is_tab_width_minus_one_spaces_and_tab(self):
         text = self.conformer.detab_leading("   \ta", self.log, 4)
 
-        self.assertEqual(" "*4 + "a", text)
+        self.assertEqual(SPACE*4 + "a", text)
+
+    #
+    # detab_text
+    #
 
     def test_detab_text_replaces_all_tabs_in_line(self):
         text = self.conformer.detab_text("\ta\tb\t", self.log, 4)
 
-        self.assertEqual(" "*4 + "a" + " "*3 + "b" + " "*3, text)
+        self.assertEqual(SPACE*4 + "a" + SPACE*3 + "b" + SPACE*3, text)
 
     def test_detab_text_replaces_tabs_with_spaces_to_tab_stops(self):
         text = self.conformer.detab_text(" \ta  \tbc \t", self.log, 4)
 
-        self.assertEqual(" "*4 + "a" + " "*3 + "bc" + " "*2, text)
+        self.assertEqual(SPACE*4 + "a" + SPACE*3 + "bc" + SPACE*2, text)
+
+    #
+    # detab_code
+    #
+
+    def test_detab_code_replaces_all_tabs_in_line(self):
+        text = self.conformer.detab_code("\ta\tb\t", self.log, 4)
+
+        self.assertEqual(SPACE*4 + "a" + SPACE*3 + "b" + SPACE*3, text)
+
+    def test_detab_code_replaces_tabs_with_spaces_to_tab_stops(self):
+        text = self.conformer.detab_code(" \ta  \tbc \t", self.log, 4)
+
+        self.assertEqual(SPACE*4 + "a" + SPACE*3 + "bc" + SPACE*2, text)
 
     def test_detab_code_replaces_tab_in_double_quote_string_literal_with_tab_specifier(self):
         text = self.conformer.detab_code('"\tXXX"', self.log, 4)
