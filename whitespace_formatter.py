@@ -181,8 +181,8 @@ class FileProcessor(object):
         return None
     
 if __name__ == '__main__':
-    #supported_operations = ['detab-leading', 'detab-text', 'detab-code', 'entab-leading', 'entab-text', 'entab-code']
-    supported_operations = ['detab-leading']
+    #FUTURE: supported_operations = ["none", "detab-leading", "detab-text", "detab-code", "entab-leading", "entab-text", "entab-code"]
+    supported_operations = ["none", "detab-leading"]
     script_name = os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]
     try:
         parser = argparse.ArgumentParser(
@@ -224,6 +224,10 @@ if __name__ == '__main__':
     > {script_name} --match *.js --match *.html src
 
     Processes files in src matching *.js or *.html instead of all text files
+
+    > {script_name} --operation none *.c
+
+    Only removes trailing whitespace from matchging files.
 
     FUTURE> {script_name} a.c --operation detab-text
 
@@ -286,7 +290,9 @@ if __name__ == '__main__':
         operations = []
         if not args.leave_trailing:
             operations.append(line_conformer.trim_trailing)
-        if args.operation == "detab-leading":
+        if args.operation == "none":
+            pass
+        elif args.operation == "detab-leading":
             operations.append(lambda line: line_conformer.detab_leading(line, tab_size))
         else:
             exit(f"Operation '{args.operation}' is not supported")
@@ -312,11 +318,13 @@ if __name__ == '__main__':
                     logger.log(f"{file_path}: updated")
                     file_conformer.save_to_file()
                 else:
-                    logger.log(f"{file_path}: content modified but save not enabled")
+                    logger.log(f"{file_path}: changes")
             else:
-                logger.log(f"{file_path}: no changes")
+                logger.log(f"{file_path}: up-to-date")
             logger.log_debug(f"End: {file_path}")
 
         logger.log(f"\nFiles processed: {len(selected_files_by_path)}; with changes: {modified_count}")
+        if modified_count > 0 and not args.update:
+            logger.log(f"Hint: Include --update to save changes")
     except AppException as e:
         exit(e)
