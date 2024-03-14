@@ -6,7 +6,8 @@
 
 
 /* class declaration commented out
-class TestClass{
+class TestClass
+{
     int test;
 	void	something();
 };
