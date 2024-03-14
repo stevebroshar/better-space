@@ -46,9 +46,14 @@ class LineConformerUnitTest(unittest.TestCase):
         self.assertEqual(" "*4 + "a" + " "*3 + "b" + " "*3, text)
 
     def test_detab_text_replaces_tabs_with_spaces_to_tab_stops(self):
-        text = self.conformer.detab_text(" \ta  \tb  \t", 4)
+        text = self.conformer.detab_text(" \ta  \tbc \t", 4)
 
-        self.assertEqual(" "*4 + "a" + " "*3 + "b" + " "*3, text)
+        self.assertEqual(" "*4 + "a" + " "*3 + "bc" + " "*2, text)
+
+    def test_detab_code_(self):
+        text = self.conformer.detab_code('const char *s = "\thello";', 4)
+
+        self.assertEqual('const char *s = "\\thello";', text)
 
 class FileConformerUnitTest(unittest.TestCase):
     def setUp(self):

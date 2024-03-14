@@ -120,7 +120,17 @@ class LineConformer(object):
         return new_leading + body
     
     def detab_text(self, line, tab_size):
-        #return line.replace("\t", " " * tab_size)
+        if not "\t" in line:
+            return line
+        new_line = ""
+        for c in line:
+            if c == "\t":
+                new_line += " " * (tab_size - len(new_line) % tab_size)
+            else:
+                new_line += c
+        return new_line
+    
+    def detab_code(self, line, tab_size):
         if not "\t" in line:
             return line
         new_line = ""
