@@ -123,7 +123,7 @@ class LineConformer(object):
     __slots__ = ["__logger", "__debugging"]
 
     def __init__(self):
-        self.__debugging = True
+        self.__debugging = False
     
     def __log_debug(self, message):
         print(f"\n {message}")
@@ -237,8 +237,6 @@ class LineConformer(object):
         return new_leading + body
 
     def entab_line(self, line, log_change, tab_size):
-        # if not SPACE in leading:
-        #     return line
         new_line = ""
         logical_len = 0
         space_count = 0
@@ -262,10 +260,10 @@ class LineConformer(object):
                 new_line += c
                 space_count = 0
             else:
-                pass
-                # if self.__debugging: self.__log_debug(f"char '{c}'")
-                # new_line += c
-                # logical_len += 1
+                if self.__debugging: self.__log_debug(f"char '{c}'")
+                new_line += c
+                logical_len += 1
+                space_count = 0
         return new_line
     
 class FileProcessor(object):
