@@ -181,14 +181,16 @@ class FileProcessor(object):
         return None
     
 if __name__ == '__main__':
+    #supported_operations = ['detab-leading', 'detab-text', 'detab-code', 'entab-leading', 'entab-text', 'entab-code']
+    supported_operations = ['detab-leading']
+    script_name = os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]
     try:
-        script_name = os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]
         parser = argparse.ArgumentParser(
             #formatter_class=argparse.RawTextHelpFormatter,
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description="Modifies text files to replace tabs with spaces (or vise versa), trims whitespace from the end of each line and replace tabs in string literals",
             epilog=f"""
-    Note: Fails for binary files specified via path; ignores binary files when matching (--pattern)
+    Note: Fails for binary files specified via path; ignores binary files when matching (--match)
 
     Terms
      o detab: replace tabs with spaces
@@ -205,70 +207,73 @@ if __name__ == '__main__':
 
     Examples
 
-    > {script_name} --modify a.cpp *.h
+    > {script_name} --update a.cpp *.h
 
     For file a.cpp and files matching *.h, replaces leading tabs with spaces and trims whitespace from the end of each line.
     Processes file a.cpp and files matching *.h.
     Fails if a.cpp not found or no files matching *.h.
     Will update modified files.
 
-    > {script_name} --modify src
+    > {script_name} --update src
 
     For each text file in the directory tree src, replaces leading tabs with spaces and trims whitespace from the end of each line.
     Ignores binary files in the directory tree.
     Fails if src not found, but not if it is an empty directory.
     Will update modified files.
 
-    > {script_name} --pattern *.js --pattern *.html src
+    > {script_name} --match *.js --match *.html src
 
     Processes files in src matching *.js or *.html instead of all text files
 
-    FUTURE> {script_name} a.c detab-text
+    FUTURE> {script_name} a.c --operation detab-text
 
     Replaces tabs with spaces throughout the file.
     If the input is source code, tabs in string literals are replaced with spaces which is probably not desirable.
 
-    FUTURE> {script_name} a.c detab-code --string-tab \\t --string-delimiter DQ --string-escape BS --line-comment // --comment-start /* --comment-end */
+    FUTURE> {script_name} a.c --operation detab-code --string-tab \\t --string-delimiter DQ --string-escape BS --line-comment // --comment-start /* --comment-end */
 
     Replaces tabs with spaces throughout the file except for string literals where tabs are replaced with the value of string-tab.
 
-    FUTURE> {script_name} abc.cpp entab-leading
+    FUTURE> {script_name} abc.cpp --operation entab-leading
         
     Replaces leading spaces with tabs and trims whitespace from the end of each line.
     """)
-        parser.add_argument("-m", "--modify", action="store_true", 
+        parser.add_argument("path", nargs="+", 
+                            help="file or directory to process")
+        parser.add_argument("-u", "--update", action="store_true", 
                             help="save modified files; not saved by default")
         parser.add_argument("-v", "--verbose", action="store_true", 
                             help="verbose logging")
         parser.add_argument("--leave-trailing", action="store_true", 
                             help="leave any trailing whitespace; default is to trim")
-        parser.add_argument("-s", "--tab-size", type=int, metavar="SIZE", 
+        parser.add_argument("-o", "--operation", metavar="NAME", default="detab-leading",
+                            help=f"detab/entab operation; default: detab-leading; supported: {', '.join(supported_operations)}")
+        parser.add_argument("-t", "--tab-size", type=int, metavar="SIZE", 
                             help="number of spaces for a tab")
-        parser.add_argument("-p", "--pattern", metavar="PATTERN", action='append',
+        parser.add_argument("-m", "--match", metavar="PATTERN", action='append',
                             help="pattern to match files in a directory")
-        parser.add_argument("path", nargs="+", 
-                            help="file or directory to process")
 
-        subparsers = parser.add_subparsers(required=False, dest="command")
-        detab_leading_parser = subparsers.add_parser('detab-leading')
-        detab_text_parser = subparsers.add_parser('detab-text')
-        detab_code_parser = subparsers.add_parser('detab-code')
-        entab_leading_parser = subparsers.add_parser('entab-leading')
-        entab_text_parser = subparsers.add_parser('entab-text')
-        entab_code_parser = subparsers.add_parser('entab-code')
+        # subparsers = parser.add_subparsers(required=False, dest="command",
+        #                                    help="detab/entab operation; default is detab-leading")
+        # detab_leading_parser = subparsers.add_parser('detab-leading')
+        # detab_text_parser = subparsers.add_parser('detab-text')
+        # detab_code_parser = subparsers.add_parser('detab-code')
+        # entab_leading_parser = subparsers.add_parser('entab-leading')
+        # entab_text_parser = subparsers.add_parser('entab-text')
+        # entab_code_parser = subparsers.add_parser('entab-code')
 
-        detab_code_parser.add_argument("--string-delimiter", metavar="TEXT", 
-                            help="text that delimits a string literal; defaults to double-quote (\")")
-        detab_code_parser.add_argument("--string-delimiter-escape", metavar="TEXT", 
-                            help="text that marks a string-delimiter character as _not_ a delimitor in a string literal; defaults to backslash (\\)")
-        detab_code_parser.add_argument("--string-tab", metavar="TEXT",
-                            help="text to replace tabs in string literals; defaults to '\\t'")
-        detab_code_parser.add_argument("--line-comment", metavar="TEXT", 
-                            help="text marks the start of a line comment; to the end of the line; defaults to '//'")
-        detab_code_parser.add_argument("--start-comment", metavar="TEXT", 
-                            help="text that delimits the start of a potentially multi-line comment; defaults to '/*'")
-        detab_code_parser.add_argument("--end-comment", metavar="TEXT", 
-                            help="text that delimits the end of a potentially multi-line comment; defaults to '*/'")
+        # detab_code_parser.add_argument("--string-delimiter", metavar="TEXT", 
+        #                     help="text that delimits a string literal; defaults to double-quote (\")")
+        # detab_code_parser.add_argument("--string-delimiter-escape", metavar="TEXT", 
+        #                     help="text that marks a string-delimiter character as _not_ a delimitor in a string literal; defaults to backslash (\\)")
+        # detab_code_parser.add_argument("--string-tab", metavar="TEXT",
+        #                     help="text to replace tabs in string literals; defaults to '\\t'")
+        # detab_code_parser.add_argument("--line-comment", metavar="TEXT", 
+        #                     help="text marks the start of a line comment; to the end of the line; defaults to '//'")
+        # detab_code_parser.add_argument("--start-comment", metavar="TEXT", 
+        #                     help="text that delimits the start of a potentially multi-line comment; defaults to '/*'")
+        # detab_code_parser.add_argument("--end-comment", metavar="TEXT", 
+        #                     help="text that delimits the end of a potentially multi-line comment; defaults to '*/'")
 
         args = parser.parse_args()
 
@@ -276,24 +281,24 @@ if __name__ == '__main__':
         logger.is_verbose_enabled = args.verbose
 
         tab_size = args.tab_size if args.tab_size else 4
-        string_literal_delim_text = args.string_delimiter if args.string_delimiter else '"'
-        string_literal_tab_text = args.string_tab if args.string_tab else '\\t'
 
         line_conformer = LineConformer(logger)
         operations = []
         if not args.leave_trailing:
             operations.append(line_conformer.trim_trailing)
-        if not args.command or args.command == "detab-leading":
+        if args.operation == "detab-leading":
             operations.append(lambda line: line_conformer.detab_leading(line, tab_size))
         else:
-            exit(f"Command '{args.command}' is not supported")
-        # if args.command == "detab-text":
+            exit(f"Operation '{args.operation}' is not supported")
+        # if args.operation == "detab-text":
         #     operations.append(lambda line: line_conformer.detab_text(line, tab_size))
-        # if args.command == "detab-code":
+        # if args.operation == "detab-code":
+        #     string_literal_delim_text = args.string_delimiter if args.string_delimiter else '"'
+        #     string_literal_tab_text = args.string_tab if args.string_tab else '\\t'
         #     operations.append(lambda line: line_conformer.detab_code(line, tab_size, string_literal_delim_text, string_literal_tab_text, line_comment, comment_start, comment_end))
 
         file_processor = FileProcessor(logger)
-        selected_files_by_path = file_processor.find_files(args.path, args.pattern)
+        selected_files_by_path = file_processor.find_files(args.path, args.match)
 
         modified_count = 0
         file_conformer = FileConformer(logger)
@@ -303,7 +308,7 @@ if __name__ == '__main__':
             file_conformer.conform_lines(operations)
             if file_conformer.is_modified:
                 modified_count += 1
-                if args.modify:
+                if args.update:
                     logger.log(f"{file_path}: updated")
                     file_conformer.save_to_file()
                 else:
