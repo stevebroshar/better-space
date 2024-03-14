@@ -12,6 +12,7 @@ class EndToEndTest(unittest.TestCase):
         if os.path.isfile(self.work_file_path):
             os.remove(self.work_file_path)
 
+    # NOTE: result.stdout and stderr may be interesting
     def __run_script(self, command):
         return subprocess.run(f"python whitespace_formatter.py {command}", text=True, capture_output=True)
     
@@ -21,16 +22,49 @@ class EndToEndTest(unittest.TestCase):
     def __read_file(self, path, encoding):
         with open(path, encoding=encoding) as f:
             return f.read()
+        
+    def __verify(self, src_file_name, expected_file_name, command, encoding):
+        src_file = self.__get_test_path(src_file_name)
+        shutil.copyfile(src_file, self.work_file_path)
+        self.__run_script(command)
+        expected = self.__read_file(self.__get_test_path(expected_file_name), encoding)
+        actual = self.__read_file(self.work_file_path, encoding)
+        self.assertEqual(actual, expected)
 
-    def test_foo(self):
-        src_file = self.__get_test_path("a-utf8-orig.h")
-        expected_file = self.__get_test_path("a-utf8-trimmed.h")
-        work_file = self.__get_test_path("test_file")
-        shutil.copyfile(src_file, work_file)
-        result = self.__run_script(f"--update --operation none {work_file}")
-        e = self.__read_file(expected_file, "utf-8")
-        a = self.__read_file(work_file, "utf-8")
-        self.assertEqual(a, e)
+    def test_default_conform_utf8(self):
+        self.__verify(
+            "a-orig-utf8.h", 
+            "a-leading_detabbed-and-trimmed-utf8.h", 
+            f"--update {self.work_file_path}", 
+            "utf-8")
+
+    def test_default_conform_utf16(self):
+        self.__verify(
+            "a-orig-utf16.h", 
+            "a-leading_detabbed-and-trimmed-utf16.h", 
+            f"--update {self.work_file_path}", 
+            "utf-16")
+
+    def test_trim_trailing_utf8(self):
+        self.__verify(
+            "a-orig-utf8.h", 
+            "a-trimmed-utf8.h", 
+            f"--update --operation none {self.work_file_path}", 
+            "utf-8")
+
+    def test_trim_trailing_utf16(self):
+        self.__verify(
+            "a-orig-utf16.h", 
+            "a-trimmed-utf16.h", 
+            f"--update --operation none {self.work_file_path}", 
+            "utf-16")
+
+    def test_detab(self):
+        self.__verify(
+            "a-orig-utf8.h", 
+            "a-trimmed-utf8.h", 
+            f"--update --operation detab-leading --leave-trailing {self.work_file_path}", 
+            "utf-8")
 
 if __name__ == '__main__':
     unittest.main()
