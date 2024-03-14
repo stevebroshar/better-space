@@ -19,6 +19,13 @@ class Logger(object):
     def is_verbose_enabled(self, to):
         self.__is_verbose_enabled = to
         
+    @property
+    def is_debug_enabled(self):
+        return self.__text
+    @is_debug_enabled.setter
+    def is_debug_enabled(self, to):
+        self.__is_debug_enabled = to
+        
     def log(self, message):
         print(message)
 
@@ -28,7 +35,7 @@ class Logger(object):
 
     def log_debug(self, message):
         if self.__is_debug_enabled:
-            self.log("DEBUG: " +message)
+            self.log(message)
 
 # Provides for editing the content of a file
 class FileConformer(object):
@@ -61,28 +68,53 @@ class FileConformer(object):
     def save_to_file(self):
         if not self.__file_path:
             raise RuntimeError("Must load file first")
-        self.__logger.log_debug(f"Saving {self.__file_path} encoding:{self.__encoding}")
+        self.__logger.log_verbose(f"Saving {self.__file_path} encoding:{self.__encoding}")
         with open(self.__file_path, "w", encoding=self.__encoding) as f:
             f.write(self.__text)
 
-    def __apply_operations(self, line, operations):
+    class Context(object):
+        __slots__ = ["__line_number", "__log_change", "__change_count"]
+
+        def __init__(self, log_change):
+            self.__change_count = 0
+            self.__log_change = log_change
+
+        def set_line_number(self, to):
+            self.__line_number = to
+
+        def get_change_count(self):
+            return self.__change_count
+
+        def log(self, message):
+            self.__change_count +=1
+            self.__log_change(self.__line_number, message)
+
+    def __log_change(self, line_number, message):
+        self.__logger.log_verbose(f"{self.__file_path}:{line_number + 1}: {message}")
+                                            
+    def __apply_operations(self, line_text, line_number, operations):
+        context = self.Context(self.__log_change)
         for operation in operations:
-            line = operation(line)
-        return line
+            context.set_line_number(line_number)
+            line_text = operation(line_text, context.log)
+        return line_text, context.get_change_count()
 
     # Applies a series of operations to the lines of the loaded cached content
     # An operation is a function that accepts a line of text and returns the conformed text
     def conform_lines(self, operations):
+        change_count = 0
         lines = self.__text.split("\n")
-        lines = [self.__apply_operations(line, operations) for line in lines]
-        self.__text = "\n".join(lines)
+        conformed_lines = []
+        for count, line in enumerate(lines):
+            conformed_line, line_change_count = self.__apply_operations(line, count, operations)
+            change_count += line_change_count
+            conformed_lines.append(conformed_line)
+        self.__text = "\n".join(conformed_lines)
+        return change_count
     
 # Utilities for editing lines of code
 class LineConformer(object):
     __slots__ = ["__logger"]
-
-    def __init__(self, logger):
-        self.__logger = logger;
 
     def __find_first_non_whitespace(self, line):
         for i, c in enumerate(line):
@@ -95,11 +127,14 @@ class LineConformer(object):
             return line, ""
         return line[:nonWsPos], line[nonWsPos:]
 
+    def __get_spaces_for_next_tab_stop(self, line, tab_size):
+        return " " * (tab_size - len(line) % tab_size)
+    
     # Removes tailing whitespace
-    def trim_trailing(self, line):
+    def trim_trailing(self, line, log_change):
         result = line.rstrip()
         if result != line:
-            self.__logger.log_debug("Trimmed line")
+            log_change("Trimmed trailing whitespace")
         return result
 
     # Replaces tabs in leading whitespace with spaces
@@ -107,38 +142,63 @@ class LineConformer(object):
     # a number of spaces equal to tab_size, then the resulting text would not neccsarily line up
     # like it did with the tabs. Therefore, this replaces each tab with the number of spaces that
     # results in an indentation sized to tab_size.
-    def detab_leading(self, line, tab_size):
+    def detab_leading(self, line, log_change, tab_size):
         leading, body = self.__split_leading(line)
         if not "\t" in leading:
             return line
         new_leading = ""
         for c in leading:
             if c == "\t":
-                new_leading += " " * (tab_size - len(new_leading) % tab_size)
+                new_leading += self.__get_spaces_for_next_tab_stop(new_leading, tab_size)
+                log_change(f"Replaced tab with spaces")
             else:
                 new_leading += c
         return new_leading + body
     
-    def detab_text(self, line, tab_size):
+    def detab_text(self, line, log_change, tab_size):
         if not "\t" in line:
             return line
         new_line = ""
         for c in line:
             if c == "\t":
-                new_line += " " * (tab_size - len(new_line) % tab_size)
+                new_line += self.__get_spaces_for_next_tab_stop(new_line, tab_size)
+                log_change(f"Replaced tab with spaces")
             else:
                 new_line += c
         return new_line
     
-    def detab_code(self, line, tab_size):
+    def detab_code(self, line, log_change, tab_size):
         if not "\t" in line:
             return line
         new_line = ""
+        inStringLiteral = False
+        tabSpecifier = r"\t"
+        stringDelim = '"'
+        stringDelimEscape = "\\"
+        escapeNext = False
         for c in line:
-            if c == "\t":
-                new_line += " " * (tab_size - len(new_line) % tab_size)
+            if c == stringDelimEscape:
+                if inStringLiteral:
+                    escapeNext = True
+                    new_line += c
+                    continue
+                new_line += c
+            elif c == stringDelim:
+                if not escapeNext:
+                    inStringLiteral = not inStringLiteral
+                new_line += c
+            elif c == "\t":
+                if inStringLiteral:
+                    new_line += tabSpecifier
+                    log_change(f"Replaced tab with {tabSpecifier} in string literal")
+                else:
+                    new_line += self.__get_spaces_for_next_tab_stop(new_line, tab_size)
+                    log_change(f"Replaced tab with spaces")
             else:
                 new_line += c
+            escapeNext = False
+        if inStringLiteral:
+            log_change(f"Unmatched string delim ({stringDelim}) in line: '{line}'")
         return new_line
     
 class FileProcessor(object):
@@ -207,7 +267,7 @@ if __name__ == '__main__':
         "none",
         "detab-leading",
         "detab-text"
-        # "detab-code",
+        "detab-code",
         # "entab-leading",
         # "entab-text",
         # "entab-code"]
@@ -275,6 +335,8 @@ if __name__ == '__main__':
                             help="save modified files; not saved by default")
         parser.add_argument("-v", "--verbose", action="store_true", 
                             help="verbose logging")
+        parser.add_argument("-D", "--DEBUG", action="store_true", 
+                            help="debug logging")
         parser.add_argument("--leave-trailing", action="store_true", 
                             help="leave any trailing whitespace; default is to trim")
         parser.add_argument("-o", "--operation", metavar="NAME", default="detab-leading",
@@ -310,19 +372,22 @@ if __name__ == '__main__':
 
         logger = Logger()
         logger.is_verbose_enabled = args.verbose
+        logger.is_debug_enabled = args.DEBUG
 
         tab_size = args.tab_size if args.tab_size else 4
 
-        line_conformer = LineConformer(logger)
+        line_conformer = LineConformer()
         operations = []
         if not args.leave_trailing:
             operations.append(line_conformer.trim_trailing)
         if args.operation == "none":
             pass
         elif args.operation == "detab-leading":
-            operations.append(lambda line: line_conformer.detab_leading(line, tab_size))
+            operations.append(lambda line, log: line_conformer.detab_leading(line, log, tab_size))
         elif args.operation == "detab-text":
-            operations.append(lambda line: line_conformer.detab_text(line, tab_size))
+            operations.append(lambda line, log: line_conformer.detab_text(line, log, tab_size))
+        elif args.operation == "detab-code":
+            operations.append(lambda line, log: line_conformer.detab_code(line, log, tab_size))
         else:
             exit(f"Operation '{args.operation}' is not supported")
         # if args.operation == "detab-text":
@@ -335,25 +400,23 @@ if __name__ == '__main__':
         file_processor = FileProcessor(logger)
         selected_files_by_path = file_processor.find_files(args.path, args.match)
 
-        modified_count = 0
+        file_change_count = 0
         file_conformer = FileConformer(logger)
         for file_path,encoding in selected_files_by_path.items():
-            logger.log_debug(f"Start: {file_path}")
             file_conformer.load_from_file(file_path, encoding)
-            file_conformer.conform_lines(operations)
+            change_count = file_conformer.conform_lines(operations)
             if file_conformer.is_modified:
-                modified_count += 1
+                file_change_count += 1
                 if args.update:
                     logger.log(f"{file_path}: updated")
                     file_conformer.save_to_file()
                 else:
-                    logger.log(f"{file_path}: changes")
+                    logger.log(f"{file_path}: changes: {change_count}")
             else:
-                logger.log(f"{file_path}: up-to-date")
-            logger.log_debug(f"End: {file_path}")
+                logger.log(f"{file_path}: no changes")
 
-        logger.log(f"\nFiles processed: {len(selected_files_by_path)}; with changes: {modified_count}")
-        if modified_count > 0 and not args.update:
+        logger.log(f"\nFiles processed: {len(selected_files_by_path)}; with changes: {file_change_count}")
+        if file_change_count > 0 and not args.update:
             logger.log(f"Hint: Include --update to save changes")
     except AppException as e:
         exit(e)

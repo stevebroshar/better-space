@@ -13,47 +13,53 @@ class FakeLogger(whitespace_formatter.Logger):
 
 class LineConformerUnitTest(unittest.TestCase):
     def setUp(self):
-        self.conformer = whitespace_formatter.LineConformer(FakeLogger())
+        self.conformer = whitespace_formatter.LineConformer()
+        self.log = lambda message: message
 
     def test_trim_trailing_removes_whitespace_from_eol(self):
-        text = self.conformer.trim_trailing("  abc \t")
+        text = self.conformer.trim_trailing("  abc \t", self.log)
 
         self.assertEqual("  abc", text)
 
     def test_detab_leading_replaces_tab_with_4_spaces(self):
-        text = self.conformer.detab_leading("\ta", 4)
+        text = self.conformer.detab_leading("\ta", self.log, 4)
 
         self.assertEqual(" "*4 + "a", text)
 
     def test_detab_leading_leaves_non_leading_tabs(self):
-        text = self.conformer.detab_leading("a\tb\t", 4)
+        text = self.conformer.detab_leading("a\tb\t", self.log, 4)
 
         self.assertEqual("a\tb\t", text)
 
     def test_detab_leading_adds_spaces_for_indent_that_is_space_and_tab(self):
-        text = self.conformer.detab_leading(" \ta", 4)
+        text = self.conformer.detab_leading(" \ta", self.log, 4)
 
         self.assertEqual(" "*4 + "a", text)
 
     def test_detab_leading_adds_spaces_for_indent_that_is_tab_width_minus_one_spaces_and_tab(self):
-        text = self.conformer.detab_leading("   \ta", 4)
+        text = self.conformer.detab_leading("   \ta", self.log, 4)
 
         self.assertEqual(" "*4 + "a", text)
 
     def test_detab_text_replaces_all_tabs_in_line(self):
-        text = self.conformer.detab_text("\ta\tb\t", 4)
+        text = self.conformer.detab_text("\ta\tb\t", self.log, 4)
 
         self.assertEqual(" "*4 + "a" + " "*3 + "b" + " "*3, text)
 
     def test_detab_text_replaces_tabs_with_spaces_to_tab_stops(self):
-        text = self.conformer.detab_text(" \ta  \tbc \t", 4)
+        text = self.conformer.detab_text(" \ta  \tbc \t", self.log, 4)
 
         self.assertEqual(" "*4 + "a" + " "*3 + "bc" + " "*2, text)
 
-    def test_detab_code_(self):
-        text = self.conformer.detab_code('const char *s = "\thello";', 4)
+    def test_detab_code_repalces_tab_in_string_literal_with_tab_specifier(self):
+        text = self.conformer.detab_code('"\tXXX"', self.log, 4)
 
-        self.assertEqual('const char *s = "\\thello";', text)
+        self.assertEqual(r'"\tXXX"', text)
+
+    def test_detab_code_ignores_escaped_string_delim_in_string_literal(self):
+        text = self.conformer.detab_code('"\\"\tXXX"', self.log, 4)
+
+        self.assertEqual('"\\"\\tXXX"', text)
 
 class FileConformerUnitTest(unittest.TestCase):
     def setUp(self):
@@ -67,21 +73,21 @@ class FileConformerUnitTest(unittest.TestCase):
     def test_conform_lines_performs_operation(self):
         self.conformer.text = "a\nb\nc"
 
-        self.conformer.conform_lines([lambda line : "==>" + line + "<=="])
+        self.conformer.conform_lines([lambda line, log : "==>" + line + "<=="])
 
         self.assertEqual("==>a<==\n==>b<==\n==>c<==", self.conformer.text)
 
     def test_conform_lines_performs_each_operation(self):
         self.conformer.text = "ab"
 
-        self.conformer.conform_lines([lambda line : line.replace("a", "x"), lambda line : line.replace("b", "y")])
+        self.conformer.conform_lines([lambda line, log : line.replace("a", "x"), lambda line, log : line.replace("b", "y")])
 
         self.assertEqual("xy", self.conformer.text)
 
     def test_conform_lines_preserves_empty_last_line(self):
         self.conformer.text = "a\nb\nc\n"
 
-        self.conformer.conform_lines([lambda line : line.replace("b", "x")])
+        self.conformer.conform_lines([lambda line, log : line.replace("b", "x")])
 
         self.assertEqual("a\nx\nc\n", self.conformer.text)
 
