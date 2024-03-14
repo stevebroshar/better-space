@@ -23,22 +23,32 @@ class LineConformerUnitTest(unittest.TestCase):
     def test_detab_leading_replaces_tab_with_4_spaces(self):
         text = self.conformer.detab_leading("\ta", 4)
 
-        self.assertEqual("    a", text)
-
-    def test_detab_leading_replaces_tab_with_configured_number_of_spaces(self):
-        text = self.conformer.detab_leading("\ta", 7)
-
-        self.assertEqual("       a", text)
+        self.assertEqual(" "*4 + "a", text)
 
     def test_detab_leading_leaves_non_leading_tabs(self):
         text = self.conformer.detab_leading("a\tb\t", 4)
 
         self.assertEqual("a\tb\t", text)
 
-    def test_detab_leading_adds_spaces_for_indent_that_is_spaces_and_tab(self):
+    def test_detab_leading_adds_spaces_for_indent_that_is_space_and_tab(self):
         text = self.conformer.detab_leading(" \ta", 4)
 
-        self.assertEqual("    a", text)
+        self.assertEqual(" "*4 + "a", text)
+
+    def test_detab_leading_adds_spaces_for_indent_that_is_tab_width_minus_one_spaces_and_tab(self):
+        text = self.conformer.detab_leading("   \ta", 4)
+
+        self.assertEqual(" "*4 + "a", text)
+
+    def test_detab_text_replaces_all_tabs_in_line(self):
+        text = self.conformer.detab_text("\ta\tb\t", 4)
+
+        self.assertEqual(" "*4 + "a" + " "*3 + "b" + " "*3, text)
+
+    def test_detab_text_replaces_tabs_with_spaces_to_tab_stops(self):
+        text = self.conformer.detab_text(" \ta  \tb  \t", 4)
+
+        self.assertEqual(" "*4 + "a" + " "*3 + "b" + " "*3, text)
 
 class FileConformerUnitTest(unittest.TestCase):
     def setUp(self):

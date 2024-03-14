@@ -109,15 +109,27 @@ class LineConformer(object):
     # results in an indentation sized to tab_size.
     def detab_leading(self, line, tab_size):
         leading, body = self.__split_leading(line)
-        if "\t" in leading:
-            new_leading = ""
-            for c in leading:
-                if c == "\t":
-                    new_leading += " " * (tab_size - len(new_leading) % tab_size)
-                else:
-                    new_leading += c
-            return new_leading + body
-        return line
+        if not "\t" in leading:
+            return line
+        new_leading = ""
+        for c in leading:
+            if c == "\t":
+                new_leading += " " * (tab_size - len(new_leading) % tab_size)
+            else:
+                new_leading += c
+        return new_leading + body
+    
+    def detab_text(self, line, tab_size):
+        #return line.replace("\t", " " * tab_size)
+        if not "\t" in line:
+            return line
+        new_line = ""
+        for c in line:
+            if c == "\t":
+                new_line += " " * (tab_size - len(new_line) % tab_size)
+            else:
+                new_line += c
+        return new_line
     
 class FileProcessor(object):
     __slots__ = "__logger"
@@ -181,8 +193,15 @@ class FileProcessor(object):
         return None
     
 if __name__ == '__main__':
-    #FUTURE: supported_operations = ["none", "detab-leading", "detab-text", "detab-code", "entab-leading", "entab-text", "entab-code"]
-    supported_operations = ["none", "detab-leading"]
+    supported_operations = [
+        "none",
+        "detab-leading",
+        "detab-text"
+        # "detab-code",
+        # "entab-leading",
+        # "entab-text",
+        # "entab-code"]
+    ]
     script_name = os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]
     try:
         parser = argparse.ArgumentParser(
@@ -292,6 +311,8 @@ if __name__ == '__main__':
             pass
         elif args.operation == "detab-leading":
             operations.append(lambda line: line_conformer.detab_leading(line, tab_size))
+        elif args.operation == "detab-text":
+            operations.append(lambda line: line_conformer.detab_text(line, tab_size))
         else:
             exit(f"Operation '{args.operation}' is not supported")
         # if args.operation == "detab-text":

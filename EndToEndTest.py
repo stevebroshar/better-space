@@ -59,7 +59,7 @@ class EndToEndTest(unittest.TestCase):
             f"--update --operation none {self.work_file_path}", 
             "utf-16")
 
-    def test_detab(self):
+    def test_detab_text(self):
         self.__verify(
             "a-orig-utf8.h", 
             "a-detabbed-utf8.h", 
