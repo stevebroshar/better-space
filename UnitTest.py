@@ -3,6 +3,8 @@ import shutil
 import os
 import unittest
 
+TAB = "\t"
+
 class FakeLogger(whitespace_formatter.Logger):
     def __init__(self):
         super().__init__()
@@ -51,15 +53,37 @@ class LineConformerUnitTest(unittest.TestCase):
 
         self.assertEqual(" "*4 + "a" + " "*3 + "bc" + " "*2, text)
 
-    def test_detab_code_repalces_tab_in_string_literal_with_tab_specifier(self):
+    def test_detab_code_replaces_tab_in_double_quote_string_literal_with_tab_specifier(self):
         text = self.conformer.detab_code('"\tXXX"', self.log, 4)
 
         self.assertEqual(r'"\tXXX"', text)
 
-    def test_detab_code_ignores_escaped_string_delim_in_string_literal(self):
-        text = self.conformer.detab_code('"\\"\tXXX"', self.log, 4)
+    def test_detab_code_replaces_tab_in_single_quote_string_literal_with_tab_specifier(self):
+        text = self.conformer.detab_code("'\tXXX'", self.log, 4)
 
-        self.assertEqual('"\\"\\tXXX"', text)
+        self.assertEqual(r"'\tXXX'", text)
+
+    # for python-like syntax
+    def test_deta_code_ignores_single_quote_in_double_quoted_string_literal(self):
+        text = self.conformer.detab_code('"\'\t"', self.log, 4)
+
+        self.assertEqual('"\'\\t"', text)
+
+    # for python-like syntax
+    def test_deta_code_ignores_double_quote_in_single_quoted_string_literal(self):
+        text = self.conformer.detab_code("'\"\t'", self.log, 4)
+
+        self.assertEqual("'\"\\t'", text)
+
+    def test_detab_code_ignores_escaped_string_delim_in_double_quote_string_literal(self):
+        text = self.conformer.detab_code(rf'"\"{TAB}XXX"', self.log, 4)
+
+        self.assertEqual(r'"\"\tXXX"', text)
+
+    def test_detab_code_ignores_escaped_escape_in_double_quote_string_literal(self):
+        text = self.conformer.detab_code(rf'"\\" "{TAB}XXX"', self.log, 4)
+
+        self.assertEqual(r'"\\" "\tXXX"', text)
 
 class FileConformerUnitTest(unittest.TestCase):
     def setUp(self):

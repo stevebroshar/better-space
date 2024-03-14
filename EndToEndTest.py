@@ -63,7 +63,7 @@ class EndToEndTest(unittest.TestCase):
         self.__verify(
             "a-orig-utf8.h", 
             "a-detabbed-utf8.h", 
-            f"--update --operation detab-text --leave-trailing {self.work_file_path}", 
+            f"--update --operation detab-code --leave-trailing {self.work_file_path}", 
             "utf-8")
 
 if __name__ == '__main__':

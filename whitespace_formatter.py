@@ -2,6 +2,12 @@ import argparse
 import glob
 import os
 
+SPACE = " "
+TAB = "\t"
+ESCAPE = "\\"
+SglQuote = "'"
+DblQuote = '"'
+
 class AppException(Exception):
     __slots__ = []
 
@@ -114,11 +120,17 @@ class FileConformer(object):
     
 # Utilities for editing lines of code
 class LineConformer(object):
-    __slots__ = ["__logger"]
+    __slots__ = ["__logger", "__debugging"]
+
+    def __init__(self):
+        self.__debugging = False
+    
+    def __log_debug(self, message):
+        print(f"\n {message}")
 
     def __find_first_non_whitespace(self, line):
         for i, c in enumerate(line):
-            if c != ' ' and c != '\t': return i
+            if c != SPACE and c != TAB: return i
         return -1
     
     def __split_leading(self, line):
@@ -128,7 +140,7 @@ class LineConformer(object):
         return line[:nonWsPos], line[nonWsPos:]
 
     def __get_spaces_for_next_tab_stop(self, line, tab_size):
-        return " " * (tab_size - len(line) % tab_size)
+        return SPACE * (tab_size - len(line) % tab_size)
     
     # Removes tailing whitespace
     def trim_trailing(self, line, log_change):
@@ -144,11 +156,11 @@ class LineConformer(object):
     # results in an indentation sized to tab_size.
     def detab_leading(self, line, log_change, tab_size):
         leading, body = self.__split_leading(line)
-        if not "\t" in leading:
+        if not TAB in leading:
             return line
         new_leading = ""
         for c in leading:
-            if c == "\t":
+            if c == TAB:
                 new_leading += self.__get_spaces_for_next_tab_stop(new_leading, tab_size)
                 log_change(f"Replaced tab with spaces")
             else:
@@ -156,11 +168,11 @@ class LineConformer(object):
         return new_leading + body
     
     def detab_text(self, line, log_change, tab_size):
-        if not "\t" in line:
+        if not TAB in line:
             return line
         new_line = ""
         for c in line:
-            if c == "\t":
+            if c == TAB:
                 new_line += self.__get_spaces_for_next_tab_stop(new_line, tab_size)
                 log_change(f"Replaced tab with spaces")
             else:
@@ -168,37 +180,55 @@ class LineConformer(object):
         return new_line
     
     def detab_code(self, line, log_change, tab_size):
-        if not "\t" in line:
+        if not TAB in line:
             return line
         new_line = ""
+        literalTabSpecifier = r"\t"
         inStringLiteral = False
-        tabSpecifier = r"\t"
-        stringDelim = '"'
-        stringDelimEscape = "\\"
+        startLiteralQuote = None
         escapeNext = False
         for c in line:
-            if c == stringDelimEscape:
+            if self.__debugging: self.__log_debug(f"char: '{c}'")
+            if c == ESCAPE:
                 if inStringLiteral:
-                    escapeNext = True
-                    new_line += c
-                    continue
+                    if escapeNext:
+                        if self.__debugging: self.__log_debug(r"escaped escape: \\")
+                    else:
+                        if self.__debugging: self.__log_debug("escape (without preceding escape)")
+                        escapeNext = True
+                        new_line += c
+                        continue
                 new_line += c
-            elif c == stringDelim:
+            elif c == SglQuote or c == DblQuote:
                 if not escapeNext:
-                    inStringLiteral = not inStringLiteral
+                    if inStringLiteral:
+                        if c == startLiteralQuote:
+                            inStringLiteral = False
+                            startLiteralQuote = None
+                            if self.__debugging: self.__log_debug("end string literal")
+                    else:
+                        inStringLiteral = True
+                        startLiteralQuote = c
+                        if self.__debugging: self.__log_debug("start string literal")
                 new_line += c
-            elif c == "\t":
+            elif c == TAB:
                 if inStringLiteral:
-                    new_line += tabSpecifier
-                    log_change(f"Replaced tab with {tabSpecifier} in string literal")
+                    new_line += literalTabSpecifier
+                    msg = f"Replaced tab with {literalTabSpecifier} in string literal"
+                    log_change(msg)
+                    if self.__debugging: self.__log_debug(msg)
                 else:
                     new_line += self.__get_spaces_for_next_tab_stop(new_line, tab_size)
-                    log_change(f"Replaced tab with spaces")
+                    msg = "Replaced tab with spaces"
+                    log_change(msg)
+                    if self.__debugging: self.__log_debug(msg)
             else:
                 new_line += c
             escapeNext = False
         if inStringLiteral:
-            log_change(f"Unmatched string delim ({stringDelim}) in line: '{line}'")
+            msg = f"Warning: Unmatched string delim ({startLiteralQuote}) in line: '{line}'"
+            if self.__debugging: self.__log_debug(msg)
+            log_change(msg)
         return new_line
     
 class FileProcessor(object):

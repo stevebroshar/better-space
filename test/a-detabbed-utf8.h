@@ -6,15 +6,16 @@
         
 
 /* class declaration commented out
-class TestClass{
+class TestClass
+{
     int test;
     void    something();    
 };
 */
 
-std::string s("     test	");
-const char c = '	';
-std::string s2("\"       	\"\"\'");
+std::string s("     test\t");
+const char c = '\t';
+std::string s2("\"       \t\"\"\'");
 
 // now the real class
 class TestClass1
@@ -31,4 +32,4 @@ private:
     void                Method_4( int variable1,
                                   int variable2);
 
-};
+};  
