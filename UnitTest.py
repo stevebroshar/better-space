@@ -43,74 +43,110 @@ class LineConformerUnitTest(unittest.TestCase):
         self.assertEqual("a\tb\t", text)
 
     def test_detab_leading_adds_spaces_for_indent_that_is_space_and_tab(self):
-        text = self.conformer.detab_leading(" \ta", self.log, 4)
+        text = self.conformer.detab_leading(SPACE + "\ta", self.log, 4)
 
         self.assertEqual(SPACE*4 + "a", text)
 
     def test_detab_leading_adds_spaces_for_indent_that_is_tab_width_minus_one_spaces_and_tab(self):
-        text = self.conformer.detab_leading("   \ta", self.log, 4)
+        text = self.conformer.detab_leading(SPACE*3 + "\ta", self.log, 4)
 
         self.assertEqual(SPACE*4 + "a", text)
 
     #
-    # detab_text
+    # detab_line
     #
 
     def test_detab_text_replaces_all_tabs_in_line(self):
-        text = self.conformer.detab_text("\ta\tb\t", self.log, 4)
+        text = self.conformer.detab_line("\ta\tb\t", self.log, 4)
 
         self.assertEqual(SPACE*4 + "a" + SPACE*3 + "b" + SPACE*3, text)
 
     def test_detab_text_replaces_tabs_with_spaces_to_tab_stops(self):
-        text = self.conformer.detab_text(" \ta  \tbc \t", self.log, 4)
+        text = self.conformer.detab_line(" \ta  \tbc \t", self.log, 4)
 
         self.assertEqual(SPACE*4 + "a" + SPACE*3 + "bc" + SPACE*2, text)
 
     #
-    # detab_code
+    # detab_code_line
     #
 
     def test_detab_code_replaces_all_tabs_in_line(self):
-        text = self.conformer.detab_code("\ta\tb\t", self.log, 4)
+        text = self.conformer.detab_code_line("\ta\tb\t", self.log, 4)
 
         self.assertEqual(SPACE*4 + "a" + SPACE*3 + "b" + SPACE*3, text)
 
     def test_detab_code_replaces_tabs_with_spaces_to_tab_stops(self):
-        text = self.conformer.detab_code(" \ta  \tbc \t", self.log, 4)
+        text = self.conformer.detab_code_line(" \ta  \tbc \t", self.log, 4)
 
         self.assertEqual(SPACE*4 + "a" + SPACE*3 + "bc" + SPACE*2, text)
 
+    # for C, C++ string and Python syntaxes
     def test_detab_code_replaces_tab_in_double_quote_string_literal_with_tab_specifier(self):
-        text = self.conformer.detab_code('"\tXXX"', self.log, 4)
+        text = self.conformer.detab_code_line('"\tXXX"', self.log, 4)
 
         self.assertEqual(r'"\tXXX"', text)
 
+    # for C, C++ char and Python syntaxes
     def test_detab_code_replaces_tab_in_single_quote_string_literal_with_tab_specifier(self):
-        text = self.conformer.detab_code("'\tXXX'", self.log, 4)
+        text = self.conformer.detab_code_line("'\tXXX'", self.log, 4)
 
         self.assertEqual(r"'\tXXX'", text)
 
-    # for python-like syntax
+    # for Python syntax
     def test_deta_code_ignores_single_quote_in_double_quoted_string_literal(self):
-        text = self.conformer.detab_code('"\'\t"', self.log, 4)
+        text = self.conformer.detab_code_line('"\'\t"', self.log, 4)
 
         self.assertEqual('"\'\\t"', text)
 
-    # for python-like syntax
+    # for Python syntax
     def test_deta_code_ignores_double_quote_in_single_quoted_string_literal(self):
-        text = self.conformer.detab_code("'\"\t'", self.log, 4)
+        text = self.conformer.detab_code_line("'\"\t'", self.log, 4)
 
         self.assertEqual("'\"\\t'", text)
 
     def test_detab_code_ignores_escaped_string_delim_in_double_quote_string_literal(self):
-        text = self.conformer.detab_code(rf'"\"{TAB}XXX"', self.log, 4)
+        text = self.conformer.detab_code_line(rf'"\"{TAB}XXX"', self.log, 4)
 
         self.assertEqual(r'"\"\tXXX"', text)
 
     def test_detab_code_ignores_escaped_escape_in_double_quote_string_literal(self):
-        text = self.conformer.detab_code(rf'"\\" "{TAB}XXX"', self.log, 4)
+        text = self.conformer.detab_code_line(rf'"\\" "{TAB}XXX"', self.log, 4)
 
         self.assertEqual(r'"\\" "\tXXX"', text)
+
+    #
+    # entab_leading
+    #
+
+    def test_entab_leading_replaces_leading_spaces_with_tab(self):
+        text = self.conformer.entab_leading(SPACE*4 + "a", self.log, 4)
+
+        self.assertEqual("\ta", text)
+
+    def test_entab_leading_leaves_non_leading_spaces(self):
+        text = self.conformer.entab_leading("a" + 5*SPACE, self.log, 4)
+
+        self.assertEqual("a" + 5*SPACE, text)
+
+    def test_entab_leading_replaces_space_and_tab_in_same_tab_stop(self):
+        text = self.conformer.entab_leading(SPACE + "\ta", self.log, 4)
+
+        self.assertEqual("\ta", text)
+
+    def test_entab_leading_replaces_max_spaces_and_tab_in_same_tab_stop(self):
+        text = self.conformer.entab_leading(SPACE*3 + "\ta", self.log, 4)
+
+        self.assertEqual("\ta", text)
+
+    def test_entab_leading_replaces_multiple_tab_stops_of_spaces_with_tabs(self):
+        text = self.conformer.entab_leading(SPACE*8 + "a", self.log, 4)
+
+        self.assertEqual("\t\ta", text)
+
+    def test_entab_leading_replaces_multiple_tab_stops_with_mixed_space_and_tab_with_tabs(self):
+        text = self.conformer.entab_leading(SPACE*3 + "\t" + SPACE*3 + "\ta", self.log, 4)
+
+        self.assertEqual("\t\ta", text)
 
 class FileConformerUnitTest(unittest.TestCase):
     def setUp(self):

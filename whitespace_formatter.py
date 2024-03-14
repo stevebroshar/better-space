@@ -16,7 +16,7 @@ class Logger(object):
 
     def __init__(self):
         self.__is_verbose_enabled = False
-        self.__is_debug_enabled = False
+        # self.__is_debug_enabled = False
 
     @property
     def is_verbose_enabled(self):
@@ -25,12 +25,12 @@ class Logger(object):
     def is_verbose_enabled(self, to):
         self.__is_verbose_enabled = to
         
-    @property
-    def is_debug_enabled(self):
-        return self.__text
-    @is_debug_enabled.setter
-    def is_debug_enabled(self, to):
-        self.__is_debug_enabled = to
+    # @property
+    # def is_debug_enabled(self):
+    #     return self.__text
+    # @is_debug_enabled.setter
+    # def is_debug_enabled(self, to):
+    #     self.__is_debug_enabled = to
         
     def log(self, message):
         print(message)
@@ -39,9 +39,9 @@ class Logger(object):
         if self.__is_verbose_enabled:
             self.log(message)
 
-    def log_debug(self, message):
-        if self.__is_debug_enabled:
-            self.log(message)
+    # def log_debug(self, message):
+    #     if self.__is_debug_enabled:
+    #         self.log(message)
 
 # Provides for editing the content of a file
 class FileConformer(object):
@@ -123,7 +123,7 @@ class LineConformer(object):
     __slots__ = ["__logger", "__debugging"]
 
     def __init__(self):
-        self.__debugging = False
+        self.__debugging = True
     
     def __log_debug(self, message):
         print(f"\n {message}")
@@ -148,26 +148,16 @@ class LineConformer(object):
         if result != line:
             log_change("Trimmed trailing whitespace")
         return result
-
-    # Replaces tabs in leading whitespace with spaces
-    # An indentation can consist of both spaces and a tab and if each tab was simply replaced with
-    # a number of spaces equal to tab_size, then the resulting text would not neccsarily line up
-    # like it did with the tabs. Therefore, this replaces each tab with the number of spaces that
-    # results in an indentation sized to tab_size.
+    
+    # Replaces tabs in indentation text of a line with spaces aligned with tab stops equally spaced by tab_size.
     def detab_leading(self, line, log_change, tab_size):
         leading, body = self.__split_leading(line)
-        if not TAB in leading:
-            return line
-        new_leading = ""
-        for c in leading:
-            if c == TAB:
-                new_leading += self.__get_spaces_for_next_tab_stop(new_leading, tab_size)
-                log_change(f"Replaced tab with spaces")
-            else:
-                new_leading += c
-        return new_leading + body
+        detabbed_leading = self.detab_line(leading, log_change, tab_size)
+        return detabbed_leading + body
     
-    def detab_text(self, line, log_change, tab_size):
+    # Replaces tabs in text with spaces aligned with tab stops equally spaced by tab_size.
+    # No special handling of string literals which is problematic for source code.
+    def detab_line(self, line, log_change, tab_size):
         if not TAB in line:
             return line
         new_line = ""
@@ -179,7 +169,15 @@ class LineConformer(object):
                 new_line += c
         return new_line
     
-    def detab_code(self, line, log_change, tab_size):
+    # Replaces tabs in text with spaces aligned with tab stops equally spaced by tab_size.
+    # Attempts to handle string literals for programming languages such as C, C++, C#, Python
+    # and languages with similar string literal syntax.
+    # A string literal beginning is either a single or double quote and then ends when the same
+    # quote char is found later but not escaped with backslash.
+    # The non-starting quote char is ignored inside a string literal like in Python.
+    # This logic also allows for C/C++ literals; both string (double-quoted) and char (single-quoted)
+    # Does _not_ handle raw literals (marked with r in Python and R in C++)
+    def detab_code_line(self, line, log_change, tab_size):
         if not TAB in line:
             return line
         new_line = ""
@@ -229,6 +227,45 @@ class LineConformer(object):
             msg = f"Warning: Unmatched string delim ({startLiteralQuote}) in line: '{line}'"
             if self.__debugging: self.__log_debug(msg)
             log_change(msg)
+        return new_line
+    
+
+    # Replaces spaces in leading whitespace with tabs according to tab stops spaced equally by tab_size.
+    def entab_leading(self, line, log_change, tab_size):
+        leading, body = self.__split_leading(line)
+        new_leading = self.entab_line(leading, log_change, tab_size)
+        return new_leading + body
+
+    def entab_line(self, line, log_change, tab_size):
+        # if not SPACE in leading:
+        #     return line
+        new_line = ""
+        logical_len = 0
+        space_count = 0
+        for c in line:
+            if c == SPACE:
+                if space_count == tab_size - 1:
+                    space_count = 0
+                    new_line += TAB
+                    logical_len += tab_size
+                    msg = "Replaced spaces with tab"
+                    log_change(msg)
+                    if self.__debugging: self.__log_debug(msg)
+                else:
+                    if self.__debugging: self.__log_debug(f"space")
+                    space_count += 1
+                    #new_leading += c
+                    logical_len += 1
+            elif c == TAB:
+                if self.__debugging: self.__log_debug(f"tab")
+                logical_len += tab_size
+                new_line += c
+                space_count = 0
+            else:
+                pass
+                # if self.__debugging: self.__log_debug(f"char '{c}'")
+                # new_line += c
+                # logical_len += 1
         return new_line
     
 class FileProcessor(object):
@@ -298,7 +335,7 @@ if __name__ == '__main__':
         "detab-leading",
         "detab-text"
         "detab-code",
-        # "entab-leading",
+        "entab-leading",
         # "entab-text",
         # "entab-code"]
     ]
@@ -365,8 +402,8 @@ if __name__ == '__main__':
                             help="save modified files; not saved by default")
         parser.add_argument("-v", "--verbose", action="store_true", 
                             help="verbose logging")
-        parser.add_argument("-D", "--DEBUG", action="store_true", 
-                            help="debug logging")
+        # parser.add_argument("-D", "--DEBUG", action="store_true", 
+        #                     help="debug logging")
         parser.add_argument("--leave-trailing", action="store_true", 
                             help="leave any trailing whitespace; default is to trim")
         parser.add_argument("-o", "--operation", metavar="NAME", default="detab-leading",
@@ -402,7 +439,7 @@ if __name__ == '__main__':
 
         logger = Logger()
         logger.is_verbose_enabled = args.verbose
-        logger.is_debug_enabled = args.DEBUG
+        # logger.is_debug_enabled = args.DEBUG
 
         tab_size = args.tab_size if args.tab_size else 4
 
@@ -410,14 +447,18 @@ if __name__ == '__main__':
         operations = []
         if not args.leave_trailing:
             operations.append(line_conformer.trim_trailing)
+        if not args.operation in supported_operations:
+            exit(f"Unknown operation '{args.operation}'")
         if args.operation == "none":
             pass
         elif args.operation == "detab-leading":
             operations.append(lambda line, log: line_conformer.detab_leading(line, log, tab_size))
         elif args.operation == "detab-text":
-            operations.append(lambda line, log: line_conformer.detab_text(line, log, tab_size))
+            operations.append(lambda line, log: line_conformer.detab_line(line, log, tab_size))
         elif args.operation == "detab-code":
-            operations.append(lambda line, log: line_conformer.detab_code(line, log, tab_size))
+            operations.append(lambda line, log: line_conformer.detab_code_line(line, log, tab_size))
+        elif args.operation == "entab-leading":
+            operations.append(lambda line, log: line_conformer.entab_leading(line, log, tab_size))
         else:
             exit(f"Operation '{args.operation}' is not supported")
         # if args.operation == "detab-text":
