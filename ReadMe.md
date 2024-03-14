@@ -16,23 +16,25 @@ Python 3
 
 ## Version 1
 
-Supports de-tabbing leading text
+Supports trimming trailing whitespace; robust for any text file.
 
-Supports trimming trailing whitespace
+Supports de-tabbing leading text; robust for any text file.
 
-Supports UTF-8 and UTF-16
+Support de-tabbing the content of a text file without special handling for string literals. This is problematic for source files with tabs in string literals.
 
-Detects binary (for ignore or error)
+Supports de-tabbing code with string literals like C, C++ and Python. Dissimilar string literals are problematic.
+
+Supports UTF-8 and UTF-16.
+
+Detects binary (not UTF 8/16); error if specified as path or ignored for file matching.
 
 ## TODO
 
-Support de-tabbing non-leading text
+Support en-tabbing leading text.
 
-Support de-tabbing string literals
+Support en-tabbing text without special handling for string literals. Problematic for code that has tabs in string literals.
 
-Support en-tabbing leading text
+Support en-tabbing code; with special handling for string literals. Probably just ignore string literals; don't replace spaces with tabs since that could change behavior of the code.
 
-Support en-tabbing non-leading text
-
-Support en-tabbing string literals
+For detab, allow leaving tabs in string literals
 
