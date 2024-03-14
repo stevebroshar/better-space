@@ -209,38 +209,36 @@ if __name__ == '__main__':
 
     > {script_name} --update a.cpp *.h
 
-    For file a.cpp and files matching *.h, replaces leading tabs with spaces and trims whitespace from the end of each line.
-    Processes file a.cpp and files matching *.h.
+    For file a.cpp and files matching *.h, replace leading tabs with spaces and trim whitespace from the end of each line.
     Fails if a.cpp not found or no files matching *.h.
-    Will update modified files.
+    Overwrites modified files.
 
     > {script_name} --update src
 
-    For each text file in the directory tree src, replaces leading tabs with spaces and trims whitespace from the end of each line.
-    Ignores binary files in the directory tree.
+    For each text file in the directory tree src, replace leading tabs with spaces and trim whitespace from the end of each line.
     Fails if src not found, but not if it is an empty directory.
-    Will update modified files.
+    Overwrites modified files.
 
     > {script_name} --match *.js --match *.html src
 
-    Processes files in src matching *.js or *.html instead of all text files
+    Process files in src matching *.js or *.html instead of all text files
 
     > {script_name} --operation none *.c
 
-    Only removes trailing whitespace from matchging files.
+    Only remove trailing whitespace from matching files.
 
     FUTURE> {script_name} a.c --operation detab-text
 
-    Replaces tabs with spaces throughout the file.
+    Replace tabs with spaces throughout the file.
     If the input is source code, tabs in string literals are replaced with spaces which is probably not desirable.
 
     FUTURE> {script_name} a.c --operation detab-code --string-tab \\t --string-delimiter DQ --string-escape BS --line-comment // --comment-start /* --comment-end */
 
-    Replaces tabs with spaces throughout the file except for string literals where tabs are replaced with the value of string-tab.
+    Replace tabs with spaces throughout the file except for string literals where tabs are replaced with the value of string-tab.
 
     FUTURE> {script_name} abc.cpp --operation entab-leading
         
-    Replaces leading spaces with tabs and trims whitespace from the end of each line.
+    Replace leading spaces with tabs and trims whitespace from the end of each line.
     """)
         parser.add_argument("path", nargs="+", 
                             help="file or directory to process")
