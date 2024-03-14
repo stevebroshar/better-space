@@ -1,7 +1,7 @@
-import unittest
 import whitespace_formatter
 import shutil
 import os
+import unittest
 
 class FakeLogger(whitespace_formatter.Logger):
     def __init__(self):
@@ -195,7 +195,7 @@ class FileProcessorUnitTest(unittest.TestCase):
 
     def test_file_files_does_not_match_binary_file(self):
         self.__write_binary_file(self.test_file_path)
-        
+    
         file_paths = self.processor.find_files([self.test_dir_path], [])
 
         self.assertCountEqual([], file_paths)
