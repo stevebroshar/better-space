@@ -340,7 +340,7 @@ if __name__ == '__main__':
         "detab-text"
         "detab-code",
         "entab-leading",
-        # "entab-text",
+        "entab-text",
         # "entab-code"]
     ]
     script_name = os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]
@@ -463,6 +463,8 @@ if __name__ == '__main__':
             operations.append(lambda line, log: line_conformer.detab_code_line(line, log, tab_size))
         elif args.operation == "entab-leading":
             operations.append(lambda line, log: line_conformer.entab_leading(line, log, tab_size))
+        elif args.operation == "entab-text":
+            operations.append(lambda line, log: line_conformer.entab_line(line, log, tab_size))
         else:
             exit(f"Operation '{args.operation}' is not supported")
         # if args.operation == "detab-text":
