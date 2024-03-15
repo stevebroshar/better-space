@@ -236,34 +236,41 @@ class LineConformer(object):
         new_leading = self.entab_line(leading, log_change, tab_size)
         return new_leading + body
 
+    # Replaces spaces with tabs according to tab stops spaced equally by tab_space.
     def entab_line(self, line, log_change, tab_size):
         new_line = ""
         logical_len = 0
         space_count = 0
         for c in line:
+            if self.__debugging: self.__log_debug(f"logical length: {logical_len}")
             if c == SPACE:
-                if space_count == tab_size - 1:
-                    space_count = 0
-                    new_line += TAB
-                    logical_len += tab_size
-                    msg = "Replaced spaces with tab"
+                if logical_len % tab_size == tab_size - 1:
+                    msg = f"Replaced {space_count + 1} space(s) with tab"
                     log_change(msg)
                     if self.__debugging: self.__log_debug(msg)
+                    new_line += TAB
+                    space_count = 0
+                    logical_len += 1
                 else:
                     if self.__debugging: self.__log_debug(f"space")
                     space_count += 1
-                    #new_leading += c
                     logical_len += 1
             elif c == TAB:
-                if self.__debugging: self.__log_debug(f"tab")
-                logical_len += tab_size
+                if space_count > 0:
+                    msg = f"Dropping {space_count} space(s) for existing tab"
+                    log_change(msg)
+                    if self.__debugging: self.__log_debug(msg)
+                else:
+                    if self.__debugging: self.__log_debug(f"tab")
                 new_line += c
                 space_count = 0
+                spaces_to_next_tab_stop = tab_size - logical_len % tab_size
+                logical_len += spaces_to_next_tab_stop
             else:
                 if self.__debugging: self.__log_debug(f"char '{c}'")
-                new_line += c
-                logical_len += 1
+                new_line += SPACE*space_count + c
                 space_count = 0
+                logical_len += 1
         return new_line
     
 class FileProcessor(object):
