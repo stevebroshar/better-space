@@ -229,7 +229,6 @@ class LineConformer(object):
             log_change(msg)
         return new_line
     
-
     # Replaces spaces in leading whitespace with tabs according to tab stops spaced equally by tab_size.
     def entab_leading(self, line, log_change, tab_size):
         leading, body = self.__split_leading(line)
