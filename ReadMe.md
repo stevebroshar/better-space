@@ -1,8 +1,34 @@
 # Whitespace Formatter
 
-Python script for managing whitespace in a test files; source code files.
+Python command line tool for managing whitespace in a source code files.
 
 [TOC]
+
+# Terms
+
+- de-tab: replace tabs with spaces
+- en-tab: replace spaces with tabs
+- leading whitespace: space and tab characters before first non-whitespace char of a line
+- trailing whitespace: space and tab characters after last non-whitespace char of a line
+- code: source code
+
+# Features
+
+- Supports UTF-8 and UTF-16 and detects and handles other formats (including binary) by either failing if specified by path or ignoring if matched in directory search.
+- Trim trailing whitespace; robust for any text file
+- De-tab or en-tab leading text; robust for any text file
+- De-tab or en-tab the content of a text file without special handling for string literals which is problematic for source files with tabs in string literals
+- De-tab code with (non-raw) string literals like C, C++, C# and Python but dissimilar string literals are problematic
+
+## String Literals
+
+Handling the text of a string literal is problematic for both de-tabbing and en-tabbing. The problem stem from the fact that the tab stops of the source in which the literal resides is almost surely different than the tab stops of the output from the application that uses the literal. Cannot treat the tabs in a literal the same as the tabs in the whitespace of the code.
+
+Another challenge with string literals is that detecting them is challenging since this tool might be used on a variety of programming languages which have different syntax. At this point, this handles languages with literals like in C, C++, C# and Python. Since the string literal syntax is somewhat uniform throughout the pantheon of languages, the logic should work well for many languages, but surely not all. Seems impossible to solve the issue in a general sense; for all edge cases.
+
+For de-tabbing, a each tab in a string literal is replaced with a tab *specifier* (\t).
+
+For en-tabbing, the content of a string literal is left as-is.
 
 # Technologies
 
@@ -22,23 +48,7 @@ End-to-end test:
 
 ## Version 1
 
-### Supported Operations
-
-- Supports UTF-8 and UTF-16 and detects and handles other formats (including binary) by either failing if specified as path or ignoring if matched in directory search.
-- Trimming trailing whitespace; robust for any text file
-- De-tabbing or en-tabbing leading text; robust for any text file
-- De-tabbing or en-tabbing the content of a text file without special handling for string literals which is problematic for source files with tabs in string literals
-- De-tabbing code with (non-raw) string literals like C, C++, C# and Python but dissimilar string literals are problematic
-
-### String Literals
-
-Handling the text of a string literal is problematic for both de-tabbing and en-tabbing. The problem stem from the fact that the tab stops of the source in which the literal resides is almost surely different than the tab stops of the output from the application that uses the literal. Cannot treat the tabs in a literal the same as the tabs in the whitespace of the code.
-
-Another challenge with string literals is that detecting them is challenging since this tool might be used on a variety of programming languages which have different syntax. At this point, this handles languages with literals like in C, C++, C# and Python. Since the string literal syntax is somewhat uniform throughout the pantheon of languages, the logic should work well for many languages, but surely not all. Seems impossible to solve the issue in a general sense; for all edge cases.
-
-For de-tabbing, a each tab in a string literal is replaced with a tab *specifier* (\t).
-
-For en-tabbing, the content of a string literal is left as-is.
+...
 
 ## TODO
 
