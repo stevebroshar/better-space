@@ -1,6 +1,8 @@
 # Whitespace Formatter
 
-Python command line tool for managing whitespace in a source code files.
+Python command line tool for managing whitespace in a source code files: replacing tabs with spaces, tabs with spaces and removing whitespace at the end of lines.
+
+TBO I hate tabs in code files. I would never replace spaces with tabs. But, I did try to make that feature usable none-the-less.
 
 [TOC]
 
