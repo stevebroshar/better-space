@@ -14,7 +14,11 @@ class EndToEndTest(unittest.TestCase):
 
     # NOTE: result.stdout and stderr may be interesting
     def __run_script(self, command):
-        return subprocess.run(f"python whitespace_formatter.py {command}", text=True, capture_output=True)
+        full_command = f"python whitespace_formatter.py {command}";
+        result = subprocess.run(full_command, text=True, capture_output=True)
+        if result.returncode != 0:
+            raise RuntimeError(f"Error code ({result.returncode}) from command: {full_command}\r{result.stderr}")
+        return result
     
     def __get_test_path(self, subpath):
         return os.path.join("test", subpath)

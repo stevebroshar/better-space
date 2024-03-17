@@ -337,7 +337,7 @@ if __name__ == '__main__':
     supported_operations = [
         "none",
         "detab-leading",
-        "detab-text"
+        "detab-text",
         "detab-code",
         "entab-leading",
         "entab-text",
@@ -452,7 +452,7 @@ if __name__ == '__main__':
         if not args.leave_trailing:
             operations.append(line_conformer.trim_trailing)
         if not args.operation in supported_operations:
-            exit(f"Unknown operation '{args.operation}'")
+            exit(f"Unknown operation '{args.operation}', supported operations: {', '.join(supported_operations)}")
         if args.operation == "none":
             pass
         elif args.operation == "detab-leading":
