@@ -140,10 +140,7 @@ class LineConformer(object):
             return line, ""
         return line[:nonWsPos], line[nonWsPos:]
 
-    def __get_spaces_to_next_tab_stop__string(self, line, tab_size):
-        return SPACE * (tab_size - len(line) % tab_size)
-    
-    def __get_spaces_to_next_tab_stop__length(self, line_len, tab_size):
+    def __get_spaces_to_next_tab_stop(self, line_len, tab_size):
         return SPACE * (tab_size - line_len % tab_size)
     
     # Removes tailing whitespace
@@ -167,7 +164,7 @@ class LineConformer(object):
         out_line = io.StringIO()
         for c in line:
             if c == TAB:
-                out_line.write(self.__get_spaces_to_next_tab_stop__length(out_line.tell(), tab_size))
+                out_line.write(self.__get_spaces_to_next_tab_stop(out_line.tell(), tab_size))
                 log_change(f"Replaced tab with spaces")
             else:
                 out_line.write(c)
@@ -220,7 +217,7 @@ class LineConformer(object):
                     log_change(msg)
                     if self.__debugging: self.__log_debug(msg)
                 else:
-                    out_line.write(self.__get_spaces_to_next_tab_stop__length(out_line.tell(), tab_size))
+                    out_line.write(self.__get_spaces_to_next_tab_stop(out_line.tell(), tab_size))
                     msg = "Replaced tab with spaces"
                     log_change(msg)
                     if self.__debugging: self.__log_debug(msg)
