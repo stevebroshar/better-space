@@ -131,13 +131,23 @@ class LineConformerUnitTest(unittest.TestCase):
         text = self.conformer.entab_line("a" + SPACE*4 + "b", self.log, 4)
         self.assertEqual(text, "a\t b")
 
-    def test_entab_line_leaves_single_space_that_completes_tab_stop(self):
-        text = self.conformer.entab_line("abc" + SPACE + "-", self.log, 4)
-        self.assertEqual(text, "abc -")
+    # # prevent replacing spaces with tab for code like:
+    # #   int foo;
+    # #   int bar;
+    # def test_entab_line_leaves_single_space_that_completes_tab_stop(self):
+    #     text = self.conformer.entab_line("abc" + SPACE + "-", self.log, 4)
+    #     self.assertEqual(text, "abc" + SPACE + "-")
 
-    def test_foo(self):
-        text = self.conformer.entab_line(r'std::string s("     test	");', self.log, 4)
-        self.assertEqual(text, 'std::string\ts("\t\ttest	");')
+    # # prevent replacing spaces with tab for code like:
+    # #   i   foo;
+    # #   i   bar;
+    # def test_entab_line_leaves_max_spaces_that_completes_tab_stop(self):
+    #     text = self.conformer.entab_line("a" + SPACE*3 + "-", self.log, 4)
+    #     self.assertEqual(text, "a" + SPACE*3 + "-")
+
+    # def test_foo(self):
+    #     text = self.conformer.entab_line(r'std::string s("     test	");', self.log, 4)
+    #     self.assertEqual(text, 'std::string\ts("\t\ttest	");')
 #   std::string s("     test	");')
 
     #

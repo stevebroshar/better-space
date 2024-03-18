@@ -1,5 +1,6 @@
 import argparse
 import glob
+import io
 import os
 
 SPACE = " "
@@ -133,14 +134,17 @@ class LineConformer(object):
             if c != SPACE and c != TAB: return i
         return -1
     
-    def __split_leading(self, line):
+    def __split_leading_whitespace(self, line):
         nonWsPos = self.__find_first_non_whitespace(line)
-        if (nonWsPos == -1):
+        if nonWsPos == -1:
             return line, ""
         return line[:nonWsPos], line[nonWsPos:]
 
-    def __get_spaces_for_next_tab_stop(self, line, tab_size):
+    def __get_spaces_to_next_tab_stop__string(self, line, tab_size):
         return SPACE * (tab_size - len(line) % tab_size)
+    
+    def __get_spaces_to_next_tab_stop__length(self, line_len, tab_size):
+        return SPACE * (tab_size - line_len % tab_size)
     
     # Removes tailing whitespace
     def trim_trailing(self, line, log_change):
@@ -151,23 +155,23 @@ class LineConformer(object):
     
     # Replaces tabs in indentation text of a line with spaces aligned with tab stops equally spaced by tab_size.
     def detab_leading(self, line, log_change, tab_size):
-        leading, body = self.__split_leading(line)
-        detabbed_leading = self.detab_line(leading, log_change, tab_size)
-        return detabbed_leading + body
+        leading_whitespace, post_leading = self.__split_leading_whitespace(line)
+        detabbed_leading = self.detab_line(leading_whitespace, log_change, tab_size)
+        return detabbed_leading + post_leading
     
     # Replaces tabs in text with spaces aligned with tab stops equally spaced by tab_size.
     # No special handling of string literals which is problematic for source code.
     def detab_line(self, line, log_change, tab_size):
         if not TAB in line:
             return line
-        new_line = ""
+        out_line = io.StringIO()
         for c in line:
             if c == TAB:
-                new_line += self.__get_spaces_for_next_tab_stop(new_line, tab_size)
+                out_line.write(self.__get_spaces_to_next_tab_stop__length(out_line.tell(), tab_size))
                 log_change(f"Replaced tab with spaces")
             else:
-                new_line += c
-        return new_line
+                out_line.write(c)
+        return out_line.getvalue()
     
     # Replaces tabs in text with spaces aligned with tab stops equally spaced by tab_size.
     # Attempts to handle string literals for programming languages such as C, C++, C#, Python
@@ -180,7 +184,7 @@ class LineConformer(object):
     def detab_code_line(self, line, log_change, tab_size):
         if not TAB in line:
             return line
-        new_line = ""
+        out_line = io.StringIO()
         literalTabSpecifier = r"\t"
         inStringLiteral = False
         startLiteralQuote = None
@@ -194,9 +198,9 @@ class LineConformer(object):
                     else:
                         if self.__debugging: self.__log_debug("escape (without preceding escape)")
                         escapeNext = True
-                        new_line += c
+                        out_line.write(c)
                         continue
-                new_line += c
+                out_line.write(c)
             elif c == SglQuote or c == DblQuote:
                 if not escapeNext:
                     if inStringLiteral:
@@ -208,46 +212,48 @@ class LineConformer(object):
                         inStringLiteral = True
                         startLiteralQuote = c
                         if self.__debugging: self.__log_debug("start string literal")
-                new_line += c
+                out_line.write(c)
             elif c == TAB:
                 if inStringLiteral:
-                    new_line += literalTabSpecifier
+                    out_line.write(literalTabSpecifier)
                     msg = f"Replaced tab with {literalTabSpecifier} in string literal"
                     log_change(msg)
                     if self.__debugging: self.__log_debug(msg)
                 else:
-                    new_line += self.__get_spaces_for_next_tab_stop(new_line, tab_size)
+                    out_line.write(self.__get_spaces_to_next_tab_stop__length(out_line.tell(), tab_size))
                     msg = "Replaced tab with spaces"
                     log_change(msg)
                     if self.__debugging: self.__log_debug(msg)
             else:
-                new_line += c
+                out_line.write(c)
             escapeNext = False
         if inStringLiteral:
             msg = f"Warning: Unmatched string delim ({startLiteralQuote}) in line: '{line}'"
             if self.__debugging: self.__log_debug(msg)
             log_change(msg)
-        return new_line
+        return out_line.getvalue()
     
     # Replaces spaces in leading whitespace with tabs according to tab stops spaced equally by tab_size.
     def entab_leading(self, line, log_change, tab_size):
-        leading, body = self.__split_leading(line)
-        new_leading = self.entab_line(leading, log_change, tab_size)
-        return new_leading + body
-
+        leading_whitespace, post_leading = self.__split_leading_whitespace(line)
+        new_leading = self.entab_line(leading_whitespace, log_change, tab_size)
+        return new_leading + post_leading
+    
     # Replaces spaces with tabs according to tab stops spaced equally by tab_space.
     def entab_line(self, line, log_change, tab_size):
-        new_line = ""
+        out_line = io.StringIO()
         logical_len = 0
         space_count = 0
+        in_tab_whitespace = False
         for c in line:
             if self.__debugging: self.__log_debug(f"logical length: {logical_len}")
             if c == SPACE:
-                if logical_len % tab_size == tab_size - 1:## and space_count > 1:
+                at_tab_stop = logical_len % tab_size == tab_size - 1
+                if at_tab_stop: # and (in_tab_whitespace or space_count > tab_size - 1):
                     msg = f"Replaced {space_count + 1} space(s) with tab"
                     log_change(msg)
                     if self.__debugging: self.__log_debug(msg)
-                    new_line += TAB
+                    out_line.write(TAB)
                     space_count = 0
                     logical_len += 1
                 else:
@@ -261,16 +267,19 @@ class LineConformer(object):
                     if self.__debugging: self.__log_debug(msg)
                 else:
                     if self.__debugging: self.__log_debug(f"tab")
-                new_line += c
+                out_line.write(c)
                 space_count = 0
                 spaces_to_next_tab_stop = tab_size - logical_len % tab_size
                 logical_len += spaces_to_next_tab_stop
+                in_tab_whitespace = True
             else:
                 if self.__debugging: self.__log_debug(f"char '{c}'")
-                new_line += SPACE*space_count + c
+                out_line.write(SPACE*space_count)
+                out_line.write(c)
                 space_count = 0
                 logical_len += 1
-        return new_line
+                in_tab_whitespace = False
+        return out_line.getvalue()
     
 class FileProcessor(object):
     __slots__ = "__logger"
