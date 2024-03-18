@@ -79,7 +79,7 @@ class FileConformer(object):
         with open(self.__file_path, "w", encoding=self.__encoding) as f:
             f.write(self.__text)
 
-    class Context(object):
+    class FileContext(object):
         __slots__ = ["__line_number", "__log_change", "__change_count"]
 
         def __init__(self, log_change):
@@ -98,9 +98,9 @@ class FileConformer(object):
 
     def __log_change(self, line_number, message):
         self.__logger.log_verbose(f"{self.__file_path}:{line_number + 1}: {message}")
-                                            
+
     def __apply_operations(self, line_text, line_number, operations):
-        context = self.Context(self.__log_change)
+        context = self.FileContext(self.__log_change)
         for operation in operations:
             context.set_line_number(line_number)
             line_text = operation(line_text, context.log)
@@ -392,20 +392,20 @@ if __name__ == '__main__':
 
     Process files in src matching *.js or *.html instead of all text files
 
-    > {script_name} --operation none *.c
+    > {script_name} --tab-operation none *.c
 
     Only remove trailing whitespace from matching files.
 
-    FUTURE> {script_name} a.c --operation detab-text
+    > {script_name} a.c --tab-operation detab-text
 
     Replace tabs with spaces throughout the file.
     If the input is source code, tabs in string literals are replaced with spaces which is probably not desirable.
 
-    FUTURE> {script_name} a.c --operation detab-code --string-tab \\t --string-delimiter DQ --string-escape BS --line-comment // --comment-start /* --comment-end */
+    > {script_name} a.c --tab-operation detab-code
 
     Replace tabs with spaces throughout the file except for string literals where tabs are replaced with the value of string-tab.
 
-    FUTURE> {script_name} abc.cpp --operation entab-leading
+    > {script_name} a.c --tab-operation entab-leading
         
     Replace leading spaces with tabs and trims whitespace from the end of each line.
     """)
@@ -419,33 +419,24 @@ if __name__ == '__main__':
         #                     help="debug logging")
         parser.add_argument("--leave-trailing", action="store_true", 
                             help="leave any trailing whitespace; default is to trim")
-        parser.add_argument("-o", "--operation", metavar="NAME", default="detab-leading",
+        parser.add_argument("-o", "--tab-operation", metavar="NAME", default="detab-leading",
                             help=f"detab/entab operation; default: detab-leading; supported: {', '.join(supported_operations)}")
         parser.add_argument("-t", "--tab-size", type=int, metavar="SIZE", 
                             help="number of spaces for a tab")
         parser.add_argument("-m", "--match", metavar="PATTERN", action='append',
                             help="pattern to match files in a directory")
 
-        # subparsers = parser.add_subparsers(required=False, dest="command",
-        #                                    help="detab/entab operation; default is detab-leading")
-        # detab_leading_parser = subparsers.add_parser('detab-leading')
-        # detab_text_parser = subparsers.add_parser('detab-text')
-        # detab_code_parser = subparsers.add_parser('detab-code')
-        # entab_leading_parser = subparsers.add_parser('entab-leading')
-        # entab_text_parser = subparsers.add_parser('entab-text')
-        # entab_code_parser = subparsers.add_parser('entab-code')
-
-        # detab_code_parser.add_argument("--string-delimiter", metavar="TEXT", 
+        # parser.add_argument("--string-delimiter", metavar="TEXT", 
         #                     help="text that delimits a string literal; defaults to double-quote (\")")
-        # detab_code_parser.add_argument("--string-delimiter-escape", metavar="TEXT", 
+        # parser.add_argument("--string-delimiter-escape", metavar="TEXT", 
         #                     help="text that marks a string-delimiter character as _not_ a delimitor in a string literal; defaults to backslash (\\)")
-        # detab_code_parser.add_argument("--string-tab", metavar="TEXT",
+        # parser.add_argument("--string-tab", metavar="TEXT",
         #                     help="text to replace tabs in string literals; defaults to '\\t'")
-        # detab_code_parser.add_argument("--line-comment", metavar="TEXT", 
+        # parser.add_argument("--line-comment", metavar="TEXT", 
         #                     help="text marks the start of a line comment; to the end of the line; defaults to '//'")
-        # detab_code_parser.add_argument("--start-comment", metavar="TEXT", 
+        # parser.add_argument("--start-comment", metavar="TEXT", 
         #                     help="text that delimits the start of a potentially multi-line comment; defaults to '/*'")
-        # detab_code_parser.add_argument("--end-comment", metavar="TEXT", 
+        # parser.add_argument("--end-comment", metavar="TEXT", 
         #                     help="text that delimits the end of a potentially multi-line comment; defaults to '*/'")
 
         args = parser.parse_args()
@@ -460,28 +451,22 @@ if __name__ == '__main__':
         operations = []
         if not args.leave_trailing:
             operations.append(line_conformer.trim_trailing)
-        if not args.operation in supported_operations:
-            exit(f"Unknown operation '{args.operation}', supported operations: {', '.join(supported_operations)}")
-        if args.operation == "none":
+        if not args.tab_operation in supported_operations:
+            exit(f"Unknown operation '{args.tab_operation}', supported operations: {', '.join(supported_operations)}")
+        if args.tab_operation == "none":
             pass
-        elif args.operation == "detab-leading":
+        elif args.tab_operation == "detab-leading":
             operations.append(lambda line, log: line_conformer.detab_leading(line, log, tab_size))
-        elif args.operation == "detab-text":
+        elif args.tab_operation == "detab-text":
             operations.append(lambda line, log: line_conformer.detab_line(line, log, tab_size))
-        elif args.operation == "detab-code":
+        elif args.tab_operation == "detab-code":
             operations.append(lambda line, log: line_conformer.detab_code_line(line, log, tab_size))
-        elif args.operation == "entab-leading":
+        elif args.tab_operation == "entab-leading":
             operations.append(lambda line, log: line_conformer.entab_leading(line, log, tab_size))
-        elif args.operation == "entab-text":
+        elif args.tab_operation == "entab-text":
             operations.append(lambda line, log: line_conformer.entab_line(line, log, tab_size))
         else:
-            exit(f"Operation '{args.operation}' is not supported")
-        # if args.operation == "detab-text":
-        #     operations.append(lambda line: line_conformer.detab_text(line, tab_size))
-        # if args.operation == "detab-code":
-        #     string_literal_delim_text = args.string_delimiter if args.string_delimiter else '"'
-        #     string_literal_tab_text = args.string_tab if args.string_tab else '\\t'
-        #     operations.append(lambda line: line_conformer.detab_code(line, tab_size, string_literal_delim_text, string_literal_tab_text, line_comment, comment_start, comment_end))
+            exit(f"Operation '{args.tab_operation}' is not supported")
 
         file_processor = FileProcessor(logger)
         selected_files_by_path = file_processor.find_files(args.path, args.match)
