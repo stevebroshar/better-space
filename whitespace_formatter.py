@@ -243,7 +243,7 @@ class LineConformer(object):
         for c in line:
             if self.__debugging: self.__log_debug(f"logical length: {logical_len}")
             if c == SPACE:
-                if logical_len % tab_size == tab_size - 1:
+                if logical_len % tab_size == tab_size - 1:## and space_count > 1:
                     msg = f"Replaced {space_count + 1} space(s) with tab"
                     log_change(msg)
                     if self.__debugging: self.__log_debug(msg)

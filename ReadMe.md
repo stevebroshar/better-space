@@ -32,6 +32,10 @@ For de-tabbing, a each tab in a string literal is replaced with a tab *specifier
 
 For en-tabbing, the content of a string literal is left as-is.
 
+## New Line Character Sequence
+
+The tool relies on Python's universal new line support that reads (splits lines) based any new line sequence (/n, /r, /r/n) and writes (joins lines) using the platform default sequence. This does mean that if the input does not use the platform default sequence, then an updated file will differ since it will use the platform default.
+
 # Technologies
 
 Python 3
