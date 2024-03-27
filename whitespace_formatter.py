@@ -469,6 +469,7 @@ if __name__ == '__main__':
         selected_files_by_path = file_processor.find_files(args.path, args.match)
 
         file_change_count = 0
+        file_error_count = 0
         file_conformer = FileConformer(logger)
         for file_path,encoding in selected_files_by_path.items():
             try:
@@ -484,9 +485,13 @@ if __name__ == '__main__':
                 else:
                     logger.log(f"{file_path}: no changes")
             except Exception as e:
+                file_error_count += 1
                 logger.log(f"{file_path}: ERROR {e}")
 
-        logger.log(f"\nFiles processed: {len(selected_files_by_path)}; with changes: {file_change_count}")
+        message = f"\nFiles processed: {len(selected_files_by_path)}; with changes: {file_change_count}"
+        if file_error_count > 0:
+            message += f" failed: {file_error_count}"
+        logger.log(message)
         if file_change_count > 0 and not args.update:
             logger.log(f"Hint: Include --update to save changes")
     except AppException as e:
