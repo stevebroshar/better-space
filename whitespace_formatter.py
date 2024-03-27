@@ -471,17 +471,20 @@ if __name__ == '__main__':
         file_change_count = 0
         file_conformer = FileConformer(logger)
         for file_path,encoding in selected_files_by_path.items():
-            file_conformer.load_from_file(file_path, encoding)
-            change_count = file_conformer.conform_lines(operations)
-            if file_conformer.is_modified:
-                file_change_count += 1
-                if args.update:
-                    logger.log(f"{file_path}: updated")
-                    file_conformer.save_to_file()
+            try:
+                file_conformer.load_from_file(file_path, encoding)
+                change_count = file_conformer.conform_lines(operations)
+                if file_conformer.is_modified:
+                    file_change_count += 1
+                    if args.update:
+                        logger.log(f"{file_path}: updated")
+                        file_conformer.save_to_file()
+                    else:
+                        logger.log(f"{file_path}: changes: {change_count}")
                 else:
-                    logger.log(f"{file_path}: changes: {change_count}")
-            else:
-                logger.log(f"{file_path}: no changes")
+                    logger.log(f"{file_path}: no changes")
+            except Exception as e:
+                logger.log(f"{file_path}: ERROR {e}")
 
         logger.log(f"\nFiles processed: {len(selected_files_by_path)}; with changes: {file_change_count}")
         if file_change_count > 0 and not args.update:
