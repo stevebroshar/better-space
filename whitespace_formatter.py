@@ -403,50 +403,51 @@ if __name__ == '__main__':
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description="Modifies text files to replace tabs with spaces (or vise versa), trims whitespace from the end of each line and replaces tabs in string literals",
             epilog=f"""
-    Note: Files with an unsupported encoding (such as binary files) result in failure when
-    specified via path, but ignored when matching (--match)
+tab operations:
+  none              Use to _only_ remove trailing whitespace
+  detab-leading     Replace tabs with spaces before the first non-whitespace character
+  detab-text        Replace tabs with spaces throughout; no special treament for string literals
+  detab-code        Replace tabs with spaces throughout with special handing for string literals
 
-    Tab operations
-     o none: Use to to _only_ remove trailing whitespace
-     o detab-leading: Replace tabs with spaces before the first non-whitespace character
-     o detab-text: Replace tabs with spaces throughout; no special treament for string literals
-     o detab-code: Replace tabs with spaces throughout with special handing for string literals
+note:
+  Files with an unsupported encoding (such as binary files) result in failure when
+  specified via path, but ignored when matching (--match)
 
-    Examples
+examples:
 
-    > {script_name} --update a.cpp *.h
+  > {script_name} --update a.cpp *.h
 
-    For file a.cpp and files matching *.h, replace leading tabs with spaces and trim whitespace
-    from the end of each line. Fails if a.cpp not found or no files matching *.h.
-    Overwrites modified files.
+  For file a.cpp and files matching *.h, replace leading tabs with spaces and trim whitespace
+  from the end of each line. Fails if a.cpp not found or no files matching *.h.
+  Overwrites modified files.
 
-    > {script_name} --update src
+  > {script_name} --update src
 
-    For each text file in the directory tree src, replace leading tabs with spaces and trim
-    whitespace from the end of each line. Fails if src not found, but not if it is an empty
-    directory. Overwrites modified files.
+  For each text file in the directory tree src, replace leading tabs with spaces and trim
+  whitespace from the end of each line. Fails if src not found, but not if it is an empty
+  directory. Overwrites modified files.
 
-    > {script_name} --match *.js --match *.html src
+  > {script_name} --match *.js --match *.html src
 
-    Process files in src matching *.js or *.html instead of all text files
+  Process files in src matching *.js or *.html instead of all text files
 
-    > {script_name} --tab-operation none *.c
+  > {script_name} --tab-operation none *.c
 
-    Only remove trailing whitespace from matching files.
+  Only remove trailing whitespace from matching files.
 
-    > {script_name} a.c --tab-operation detab-text
+  > {script_name} a.c --tab-operation detab-text
 
-    Replace tabs with spaces throughout the file. Tabs in source code string literals are replaced
-    with spaces -- which is probably not desirable.
+  Replace tabs with spaces throughout the file. Tabs in source code string literals are replaced
+  with spaces -- which is probably not desirable.
 
-    > {script_name} a.c --tab-operation detab-code
+  > {script_name} a.c --tab-operation detab-code
 
-    Replace tabs with spaces throughout the file except for string literals where tabs are replaced
-    with markup (\\t by default).
+  Replace tabs with spaces throughout the file except for string literals where tabs are replaced
+  with markup (\\t by default).
 
-    > {script_name} a.c --tab-operation entab-leading
-        
-    Replace leading spaces with tabs and trims whitespace from the end of each line.
+  > {script_name} a.c --tab-operation entab-leading
+
+  Replace leading spaces with tabs and trim whitespace from the end of each line.
     """)
         parser.add_argument("path", nargs="+", 
                             help="file or directory to process")
