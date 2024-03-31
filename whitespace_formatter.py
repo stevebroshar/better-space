@@ -1,6 +1,7 @@
 import argparse
 import glob
 import io
+import sys
 import os
 
 SPACE = " "
@@ -17,22 +18,14 @@ class Logger(object):
 
     def __init__(self):
         self.__is_verbose_enabled = False
-        # self.__is_debug_enabled = False
 
     @property
     def is_verbose_enabled(self):
         return self.__text
     @is_verbose_enabled.setter
     def is_verbose_enabled(self, to):
-        self.__is_verbose_enabled = to
-        
-    # @property
-    # def is_debug_enabled(self):
-    #     return self.__text
-    # @is_debug_enabled.setter
-    # def is_debug_enabled(self, to):
-    #     self.__is_debug_enabled = to
-        
+        self.__is_verbose_enabled = bool(to)
+
     def log(self, message):
         print(message)
 
@@ -40,39 +33,36 @@ class Logger(object):
         if self.__is_verbose_enabled:
             self.log(message)
 
-    # def log_debug(self, message):
-    #     if self.__is_debug_enabled:
-    #         self.log(message)
-
-# Provides for editing the content of a file
 class FileConformer(object):
+    '''Provides for editing the content of a file'''
+    
     __slots__ = "__file_text", "__text", "__file_path", "__logger", "__encoding"
 
     def __init__(self, logger):
         self.__logger = logger
         self.__text = ""
 
-    # Cached file content
     @property
     def text(self):
+        '''Cached file content'''
         return self.__text
     @text.setter
     def text(self, to):
-        self.__text = to
+        self.__text = str(to)
 
     @property
     def is_modified(self):
         return self.__text != self.__file_text
 
-    # Loads and caches the content of a file
     def load_from_file(self, file_path, encoding):
+        '''Loads and caches the content of a file'''
         self.__file_path = file_path
         self.__encoding = encoding
         with open(file_path, "r", encoding=encoding) as f:
             self.__file_text = self.__text = f.read()
 
-    # Saves the cached file content to the file from which it was loaded using the same encoding
     def save_to_file(self):
+        '''Saves the cached file content to the file from which it was loaded using the same encoding'''
         if not self.__file_path:
             raise RuntimeError("Must load file first")
         self.__logger.log_verbose(f"Saving {self.__file_path} encoding:{self.__encoding}")
@@ -106,9 +96,11 @@ class FileConformer(object):
             line_text = operation(line_text, context.log)
         return line_text, context.get_change_count()
 
-    # Applies a series of operations to the lines of the loaded cached content
-    # An operation is a function that accepts a line of text and returns the conformed text
     def conform_lines(self, operations):
+        '''
+        Applies a series of operations to the lines of the loaded cached content
+        An operation is a function that accepts a line of text and returns the conformed text
+        '''
         change_count = 0
         lines = self.__text.split("\n")
         conformed_lines = []
@@ -119,8 +111,9 @@ class FileConformer(object):
         self.__text = "\n".join(conformed_lines)
         return change_count
     
-# Utilities for editing lines of code
 class LineConformer(object):
+    '''Utilities for editing lines of code'''
+
     __slots__ = ["__logger", "__debugging"]
 
     def __init__(self):
@@ -143,22 +136,24 @@ class LineConformer(object):
     def __get_spaces_to_next_tab_stop(self, line_len, tab_size):
         return SPACE * (tab_size - line_len % tab_size)
     
-    # Removes tailing whitespace
     def trim_trailing(self, line, log_change):
+        '''Removes tailing whitespace'''
         result = line.rstrip()
         if result != line:
             log_change("Trimmed trailing whitespace")
         return result
     
-    # Replaces tabs in indentation text of a line with spaces aligned with tab stops equally spaced by tab_size.
     def detab_leading(self, line, log_change, tab_size):
+        '''Replaces tabs in indentation text of a line with spaces aligned with tab stops equally spaced by tab_size.'''
         leading_whitespace, post_leading = self.__split_leading_whitespace(line)
         detabbed_leading = self.detab_line(leading_whitespace, log_change, tab_size)
         return detabbed_leading + post_leading
     
-    # Replaces tabs in text with spaces aligned with tab stops equally spaced by tab_size.
-    # No special handling of string literals which is problematic for source code.
     def detab_line(self, line, log_change, tab_size):
+        '''
+        Replaces tabs in text with spaces aligned with tab stops equally spaced by tab_size.
+        No special handling of string literals which is problematic for source code.
+        '''
         if not TAB in line:
             return line
         out_line = io.StringIO()
@@ -170,15 +165,19 @@ class LineConformer(object):
                 out_line.write(c)
         return out_line.getvalue()
     
-    # Replaces tabs in text with spaces aligned with tab stops equally spaced by tab_size.
-    # Attempts to handle string literals for programming languages such as C, C++, C#, Python
-    # and languages with similar string literal syntax.
-    # A string literal beginning is either a single or double quote and then ends when the same
-    # quote char is found later but not escaped with backslash.
-    # The non-starting quote char is ignored inside a string literal like in Python.
-    # This logic also allows for C/C++ literals; both string (double-quoted) and char (single-quoted)
-    # Does _not_ handle raw literals (marked with r in Python and R in C++)
     def detab_code_line(self, line, log_change, tab_size):
+        '''
+        Replaces tabs in text with spaces aligned with tab stops equally spaced by tab_size.
+        Attempts to handle string literals for programming languages such as C, C++, C#, Python
+        and languages with similar string literal syntax.
+        A string literal beginning is either a single or double quote and then ends when the same
+        quote char is found later but not escaped with backslash.
+        The non-starting quote char is ignored inside a string literal like in Python.
+        This logic also allows for C/C++ literals; both string (double-quoted) and char (single-quoted)
+
+        ### Known limitation
+        Does _not_ handle raw literals (marked with r in Python and R in C++)
+        '''
         if not TAB in line:
             return line
         out_line = io.StringIO()
@@ -230,14 +229,14 @@ class LineConformer(object):
             log_change(msg)
         return out_line.getvalue()
     
-    # Replaces spaces in leading whitespace with tabs according to tab stops spaced equally by tab_size.
     def entab_leading(self, line, log_change, tab_size):
+        '''Replaces spaces in leading whitespace with tabs according to tab stops spaced equally by tab_size'''
         leading_whitespace, post_leading = self.__split_leading_whitespace(line)
         new_leading = self.entab_line(leading_whitespace, log_change, tab_size)
         return new_leading + post_leading
     
-    # Replaces spaces with tabs according to tab stops spaced equally by tab_space.
     def entab_line(self, line, log_change, tab_size):
+        '''Replaces spaces with tabs according to tab stops spaced equally by tab_size'''
         out_line = io.StringIO()
         logical_len = 0
         space_count = 0
@@ -278,25 +277,83 @@ class LineConformer(object):
                 in_tab_whitespace = False
         return out_line.getvalue()
     
+class FileSelect(object):
+    '''
+    Specifies file selection criteria.
+    Defaults to selecting all files of a directoy and all levels of sub-directories.
+    '''
+
+    __slots__ = ["__depth_limit", "__match_patterns"]
+
+    def __init__(self):
+        self.__match_patterns = ["*"]
+        self.__depth_limit = sys.maxsize
+
+    @property
+    def match_patterns(self):
+        '''Filter patterns to select files in a directory; can contain path wildcards'''
+        return self.__match_patterns
+    @match_patterns.setter
+    def match_patterns(self, to):
+        self.__match_patterns = list(to)
+
+    @property
+    def depth_limit(self):
+        '''
+        Number of subdirectory levels to process.
+        Value 0 selects to only process specified files and files in specified directories
+        '''
+        return self.__depth_limit
+    @depth_limit.setter
+    def depth_limit(self, to):
+        if to < 0:
+            raise ValueError("Depth limit minimum is 0")
+        self.__depth_limit = bool(to)
+
+    def __str__(self):
+        return f"{{match_patterns:{self.match_patterns} depth_limit:{self.depth_limit}}}"
+
 class FileProcessor(object):
     __slots__ = "__logger"
 
     def __init__(self, logger):
         self.__logger = logger
 
-    # Finds files based on input
-    # path_specs: list of path patterns to select files and directories
-    # match_patterns: list of patterns to filter items in a directory
-    # recurse_depth: 
-    #   None: recurse to bottom
-    #   False|1: processes files and files in directories specified by path_specs
-    #   0: process no directories
-    #   >0: number of directory levels to process
-    def find_files(self, path_specs, match_patterns, recurse_depth=None):
-        if recurse_depth == False: recurse_depth = 1
-        next_recursive_depth = recurse_depth
-        if not next_recursive_depth == None:
-            next_recursive_depth =- 1
+    def __find_files_in_tree(self, selected_files_by_path, dir_path, file_select, depth):
+        '''
+        Finds files in a directory tree based on selection criteria
+
+        ### Parameters
+        selected_files_by_path (dict): Selected files by path
+        dir_path (string): Directory path
+        file_select (FileSelect): Selection criteria
+        depth (number): Current depth of search
+        '''
+        if depth <= file_select.depth_limit:
+            for match_pattern in file_select.match_patterns:
+                sub_pattern = os.path.join(dir_path, match_pattern)
+                matching_sub_paths = glob.glob(sub_pattern)
+                for sub_path in matching_sub_paths:
+                    encoding = self.detect_encoding_or_none(sub_path)
+                    if os.path.isfile(sub_path):
+                        if not encoding:
+                            self.__logger.log(f"{sub_path}: ignoring file since is unsupported text encoding or binary")
+                        else:
+                            selected_files_by_path[sub_path] = encoding
+            # search sub-dirs
+            sub_paths = glob.glob(os.path.join(dir_path, "*"))
+            for sub_path in sub_paths:
+                if os.path.isdir(sub_path):
+                    self.__find_files_in_tree(selected_files_by_path, sub_path, file_select, depth + 1)
+
+    def find_files(self, path_specs, file_select=FileSelect()):
+        '''
+        Finds files based on selection criteria
+
+        ### Parameters
+        path_specs (string[]): Path patterns to select files and directories; can contain path wildcards
+        file_select (FileSelect): Selection criteria
+        '''
         selected_files_by_path = dict()
         for path_spec in path_specs:
             paths = glob.glob(path_spec)
@@ -304,31 +361,21 @@ class FileProcessor(object):
                 raise AppException(f"No files selected by '{path_spec}'")
             for path in paths:
                 if os.path.isfile(path):
-                    encoding = self.detect_encoding(path)
+                    encoding = self.detect_encoding_or_none(path)
                     if not encoding:
-                        raise AppException(f"File is not readable text '{path}'; is binary or an unknown text encoding")
+                        raise AppException(f"File is unsupported text encoding or binary '{path}'")
                     selected_files_by_path[path] = encoding
                 elif os.path.isdir(path):
-                    if recurse_depth == None or recurse_depth > 0:
-                        if match_patterns == None or len(match_patterns) == 0:
-                            match_patterns = ["*"]
-                        for match_pattern in match_patterns:
-                            sub_pattern = os.path.join(path, match_pattern)
-                            sub_paths = glob.glob(sub_pattern)
-                            non_binary_sub_paths = []
-                            for sub_path in sub_paths:
-                                if os.path.isfile(sub_path) and not self.detect_encoding(sub_path):
-                                    self.__logger.log(f"{sub_path}: ignoring since is not readabile text; is binary or an unknown text encoding")
-                                else:
-                                    non_binary_sub_paths.append(sub_path)
-                            decendent_files = self.find_files(non_binary_sub_paths, match_patterns, next_recursive_depth)
-                            selected_files_by_path.update(decendent_files)
+                    self.__find_files_in_tree(selected_files_by_path, path, file_select, 0)
                 else:
-                    raise RuntimeError("Unexpected")
+                    raise RuntimeError(f"INTERNAL ERROR: Path is neither file nor dir: {path}")
         return selected_files_by_path
-    
-    # Returns the first encoding that works for the file or None if none work which means the file is probably binary.
-    def detect_encoding(self, file_path):
+
+    def detect_encoding_or_none(self, file_path):
+        '''
+        Returns the first supported encoding that works for the file or None if none work which 
+        means the file is either unsupported text encoding or binary.
+        '''
         encodings = ["utf-16", "utf-8"]
         for encoding in encodings:
             try:
@@ -466,7 +513,7 @@ if __name__ == '__main__':
             exit(f"Operation '{args.tab_operation}' is not supported")
 
         file_processor = FileProcessor(logger)
-        selected_files_by_path = file_processor.find_files(args.path, args.match)
+        selected_files_by_path = file_processor.find_files_OLD(args.path, args.match)
 
         file_change_count = 0
         file_error_count = 0

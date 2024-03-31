@@ -220,6 +220,14 @@ class FileConformerUnitTest(unittest.TestCase):
 
         self.assertEqual(True, self.conformer.is_modified)
 
+class FileSelectUnitTest(unittest.TestCase):
+    def setUp(self):
+        self.select = whitespace_formatter.FileSelect()
+
+    def test_depth_limit_prohibits_negative_value(self):
+        with self.assertRaises(ValueError):
+            self.select.depth_limit = -1
+ 
 class FileProcessorUnitTest(unittest.TestCase):
     def setUp(self):
         self.processor = whitespace_formatter.FileProcessor(FakeLogger())
@@ -240,108 +248,166 @@ class FileProcessorUnitTest(unittest.TestCase):
     def __get_test_file_path(self, file_name):
         return os.path.join(self.test_dir_path, file_name)
 
+    def __create_file(self, path):
+        with open(path, "w") as f: f.write(f"test file: {path}")
+
     def test_detect_encoding_returns_utf8_for_utf8_content(self):
         with open(self.test_file_path, "w", encoding="utf-8") as f: f.write("Abc123")
-        self.assertEqual("utf-8", self.processor.detect_encoding(self.test_file_path))
+        self.assertEqual("utf-8", self.processor.detect_encoding_or_none(self.test_file_path))
 
     def test_detect_encoding_returns_utf16_for_utf16_content(self):
         with open(self.test_file_path, "w", encoding="utf-16") as f: f.write("Abc123")
-        self.assertEqual("utf-16", self.processor.detect_encoding(self.test_file_path))
+        self.assertEqual("utf-16", self.processor.detect_encoding_or_none(self.test_file_path))
 
     def test_detect_encoding_returns_None_for_binary_content(self):
         self.__write_binary_file(self.test_file_path)
-        self.assertEqual(None, self.processor.detect_encoding(self.test_file_path))
+        self.assertEqual(None, self.processor.detect_encoding_or_none(self.test_file_path))
 
-    def test_file_files_returns_empty_for_empty(self):
-        file_paths = self.processor.find_files([], [])
+    def test_find_files_returns_empty_for_empty(self):
+        file_paths = self.processor.find_files([])
 
         self.assertEqual(0, len(file_paths))
 
-    def test_file_files_fails_for_no_match(self):
-        self.assertRaises(whitespace_formatter.AppException, self.processor.find_files, ["notthere"], [])
+    def test_find_files_fails_for_no_match(self):
+        self.assertRaises(whitespace_formatter.AppException, self.processor.find_files, ["notthere"])
 
-    def test_file_files_finds_file_by_name(self):
-        with open(self.test_file_path, "w", encoding="utf-8") as f: f.write("xxx")
+    def test_find_files_finds_file_by_name(self):
+        self.__create_file(self.test_file_path)
         
-        file_paths = self.processor.find_files([self.test_file_path], [])
+        file_paths = self.processor.find_files([self.test_file_path])
 
         self.assertEqual({self.test_file_path: "utf-8"}, file_paths)
 
-    def test_file_files_finds_files_by_pattern(self):
+    def test_find_files_finds_files_by_pattern(self):
         file_path_a = self.__get_test_file_path("a.c")
         file_path_b = self.__get_test_file_path("a.h")
-        with open(file_path_a, "w") as f: f.write("a")
-        with open(file_path_b, "w") as f: f.write("b")
+        self.__create_file(file_path_a)
+        self.__create_file(file_path_b)
         
-        file_paths = self.processor.find_files([self.__get_test_file_path("a.*")], [])
+        file_paths = self.processor.find_files([self.__get_test_file_path("a.*")])
 
         self.assertCountEqual([file_path_a, file_path_b], file_paths)
 
-    def test_file_files_finds_files_in_dir(self):
+    def test_find_files_finds_files_in_dir(self):
         file_path_a = self.__get_test_file_path("a.c")
         file_path_b = self.__get_test_file_path("a.h")
-        with open(file_path_a, "w") as f: f.write("a")
-        with open(file_path_b, "w") as f: f.write("b")
+        self.__create_file(file_path_a)
+        self.__create_file(file_path_b)
         
-        file_paths = self.processor.find_files([self.test_dir_path], [])
+        file_paths = self.processor.find_files([self.test_dir_path])
 
         self.assertCountEqual([file_path_a, file_path_b], file_paths)
 
-    def test_file_files_filters_dir_files(self):
+    def test_find_files_filters_dir_files(self):
         file_path_a = self.__get_test_file_path("a.c")
         file_path_b = self.__get_test_file_path("a.h")
-        with open(file_path_a, "w") as f: f.write("a")
-        with open(file_path_b, "w") as f: f.write("b")
-        
-        file_paths = self.processor.find_files([self.test_dir_path], ["*.c"])
+        self.__create_file(file_path_a)
+        self.__create_file(file_path_b)
+        file_select = whitespace_formatter.FileSelect()
+        file_select.match_patterns = ["*.c"]
+
+        file_paths = self.processor.find_files([self.test_dir_path], file_select)
 
         self.assertCountEqual([file_path_a], file_paths)
 
-    def test_file_files_does_not_have_duplicates_for_overlapping_matching_patterns(self):
+    def test_find_files_does_not_have_duplicates_for_overlapping_matching_patterns(self):
         file_path_a = self.__get_test_file_path("a.c")
         file_path_b = self.__get_test_file_path("a.h")
-        with open(file_path_a, "w") as f: f.write("a")
-        with open(file_path_b, "w") as f: f.write("b")
+        self.__create_file(file_path_a)
+        self.__create_file(file_path_b)
+        file_select = whitespace_formatter.FileSelect()
+        file_select.match_patterns = ["*.c", "a.*"]
         
-        file_paths = self.processor.find_files([self.test_dir_path], ["*.c", "a.*"])
+        file_paths = self.processor.find_files([self.test_dir_path], file_select)
 
         self.assertCountEqual([file_path_a, file_path_b], file_paths)
 
-    def test_file_files_fails_for_binary_file(self):
+    def test_find_files_fails_for_binary_file(self):
         self.__write_binary_file(self.test_file_path)
         
-        self.assertRaises(whitespace_formatter.AppException, self.processor.find_files, [self.test_file_path], [])
+        self.assertRaises(whitespace_formatter.AppException, self.processor.find_files, [self.test_file_path])
 
-    def test_file_files_does_not_match_binary_file(self):
+    def test_find_files_does_not_match_binary_file(self):
         self.__write_binary_file(self.test_file_path)
     
-        file_paths = self.processor.find_files([self.test_dir_path], [])
+        file_paths = self.processor.find_files([self.test_dir_path])
 
         self.assertCountEqual([], file_paths)
 
-    def test_file_files_recurses_dir_tree_by_default(self):
-        file_path_a = self.__get_test_file_path("a")
-        file_dir_sub = self.__get_test_file_path("sub")
-        file_path_suba = self.__get_test_file_path(os.path.join("sub", "suba"))
-        with open(file_path_a, "w") as f: f.write("a")
-        os.mkdir(file_dir_sub)
-        with open(file_path_suba, "w") as f: f.write("suba")
+    def test_find_files_selects_files_in_subdirectory(self):
+        root_dir_file_path = self.__get_test_file_path("a")
+        child_dir_path = self.__get_test_file_path("child-dir")
+        child_dir_file_path = os.path.join(child_dir_path, "child-dir-file")
+        self.__create_file(root_dir_file_path)
+        os.mkdir(child_dir_path)
+        self.__create_file(child_dir_file_path)
         
-        file_paths = self.processor.find_files([self.test_dir_path], [])
+        file_paths = self.processor.find_files([self.test_dir_path])
 
-        self.assertCountEqual([file_path_a, file_path_suba], file_paths)
+        self.assertCountEqual([root_dir_file_path, child_dir_file_path], file_paths)
 
-    def test_file_files_does_not_recurse_when_specified(self):
-        file_path_a = self.__get_test_file_path("a")
-        file_dir_sub = self.__get_test_file_path("sub")
-        file_path_suba = self.__get_test_file_path(os.path.join("sub", "suba"))
-        with open(file_path_a, "w") as f: f.write("a")
-        os.mkdir(file_dir_sub)
-        with open(file_path_suba, "w") as f: f.write("suba")
+    def test_find_files_selects_subdirectory_files_via_matching(self):
+        child_dir_path = self.__get_test_file_path("child-dir")
+        child_dir_file_path = os.path.join(child_dir_path, "child-dir-file.ext")
+        os.mkdir(child_dir_path)
+        self.__create_file(child_dir_file_path)
+        self.__create_file(child_dir_file_path + ".a")
+        self.__create_file(child_dir_file_path + ".b")
+        file_select = whitespace_formatter.FileSelect()
+        file_select.match_patterns = ["*.ext"]
         
-        file_paths = self.processor.find_files([self.test_dir_path], [], False)
+        file_paths = self.processor.find_files([self.test_dir_path], file_select)
 
-        self.assertCountEqual([file_path_a], file_paths)
+        self.assertCountEqual([child_dir_file_path], file_paths)
+
+    def test_find_files_recurses_multiple_subdirectory_levels(self):
+        root_file_path = self.__get_test_file_path("root-file")
+        child_dir_path = self.__get_test_file_path("child-dir")
+        child_dir_file_path = os.path.join(child_dir_path, "child-dir-file")
+        grandchild_dir_path = os.path.join(child_dir_path, "grandchild-dir")
+        grandchild_dir_file_path = os.path.join(grandchild_dir_path, "grand-file")
+        os.makedirs(grandchild_dir_path)
+        self.__create_file(root_file_path)
+        self.__create_file(child_dir_file_path)
+        self.__create_file(grandchild_dir_file_path)
+        
+        file_paths = self.processor.find_files([self.test_dir_path])
+
+        self.assertCountEqual([root_file_path, child_dir_file_path, grandchild_dir_file_path], file_paths)
+
+    def test_find_files_selects_only_root_files_for_depth_limit_0(self):
+        root_file_path = self.__get_test_file_path("root-file")
+        child_dir_path = self.__get_test_file_path("child-dir")
+        child_dir_file_path = os.path.join(child_dir_path, "child-dir-file")
+        grandchild_dir_path = os.path.join(child_dir_path, "grandchild-dir")
+        grandchild_dir_file_path = os.path.join(grandchild_dir_path, "grand-file")
+        os.makedirs(grandchild_dir_path)
+        self.__create_file(root_file_path)
+        self.__create_file(child_dir_file_path)
+        self.__create_file(grandchild_dir_file_path)
+        file_select = whitespace_formatter.FileSelect()
+        file_select.depth_limit = 0
+        
+        file_paths = self.processor.find_files([self.test_dir_path], file_select)
+
+        self.assertCountEqual([root_file_path], file_paths)
+
+    def test_find_files_selects_root_and_child_files_for_depth_limit_1(self):
+        root_file_path = self.__get_test_file_path("root-file")
+        child_dir_path = self.__get_test_file_path("child-dir")
+        child_dir_file_path = os.path.join(child_dir_path, "child-dir-file")
+        grandchild_dir_path = os.path.join(child_dir_path, "grandchild-dir")
+        grandchild_dir_file_path = os.path.join(grandchild_dir_path, "grand-file")
+        os.makedirs(grandchild_dir_path)
+        self.__create_file(root_file_path)
+        self.__create_file(child_dir_file_path)
+        self.__create_file(grandchild_dir_file_path)
+        file_select = whitespace_formatter.FileSelect()
+        file_select.depth_limit = 1
+        
+        file_paths = self.processor.find_files([self.test_dir_path], file_select)
+
+        self.assertCountEqual([root_file_path, child_dir_file_path], file_paths)
 
 if __name__ == '__main__':
     unittest.main()
