@@ -401,36 +401,30 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(
             #formatter_class=argparse.RawTextHelpFormatter,
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            description="Modifies text files to replace tabs with spaces (or vise versa), trims whitespace from the end of each line and replace tabs in string literals",
+            description="Modifies text files to replace tabs with spaces (or vise versa), trims whitespace from the end of each line and replaces tabs in string literals",
             epilog=f"""
-    Note: Fails for binary files specified via path; ignores binary files when matching (--match)
+    Note: Files with an unsupported encoding (such as binary files) result in failure when
+    specified via path, but ignored when matching (--match)
 
-    Terms
-     o detab: replace tabs with spaces
-     o entab: replace spaces with tabs
-     o leading: whitespace before first non-whitespace char of a line
-     o trailing: whitespace after last non-whitespace char of a line
-     o text: a flat text file
-     o code: source code; also a flat text file
-
-    Operations
-     o detab-leading: Replaces tabs with spaces before the first non-whitespace character
-     o detab-text: Replaces tabs with spaces after the first and before the last non-whitespace character; no special treament for string literals
-     o detab-code: Replaces tabs with spaces after the first and before the last non-whitespace character with special handing for string literals
+    Tab operations
+     o none: Use to to _only_ remove trailing whitespace
+     o detab-leading: Replace tabs with spaces before the first non-whitespace character
+     o detab-text: Replace tabs with spaces throughout; no special treament for string literals
+     o detab-code: Replace tabs with spaces throughout with special handing for string literals
 
     Examples
 
     > {script_name} --update a.cpp *.h
 
-    For file a.cpp and files matching *.h, replace leading tabs with spaces and trim whitespace from the end of each line.
-    Fails if a.cpp not found or no files matching *.h.
+    For file a.cpp and files matching *.h, replace leading tabs with spaces and trim whitespace
+    from the end of each line. Fails if a.cpp not found or no files matching *.h.
     Overwrites modified files.
 
     > {script_name} --update src
 
-    For each text file in the directory tree src, replace leading tabs with spaces and trim whitespace from the end of each line.
-    Fails if src not found, but not if it is an empty directory.
-    Overwrites modified files.
+    For each text file in the directory tree src, replace leading tabs with spaces and trim
+    whitespace from the end of each line. Fails if src not found, but not if it is an empty
+    directory. Overwrites modified files.
 
     > {script_name} --match *.js --match *.html src
 
@@ -442,12 +436,13 @@ if __name__ == '__main__':
 
     > {script_name} a.c --tab-operation detab-text
 
-    Replace tabs with spaces throughout the file.
-    If the input is source code, tabs in string literals are replaced with spaces which is probably not desirable.
+    Replace tabs with spaces throughout the file. Tabs in source code string literals are replaced
+    with spaces -- which is probably not desirable.
 
     > {script_name} a.c --tab-operation detab-code
 
-    Replace tabs with spaces throughout the file except for string literals where tabs are replaced with the value of string-tab.
+    Replace tabs with spaces throughout the file except for string literals where tabs are replaced
+    with markup (\\t by default).
 
     > {script_name} a.c --tab-operation entab-leading
         
