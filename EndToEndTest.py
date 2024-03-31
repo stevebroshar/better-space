@@ -53,28 +53,28 @@ class EndToEndTest(unittest.TestCase):
         self.__verify(
             "a-orig-utf8.h", 
             "a-trimmed-utf8.h", 
-            f"--update --operation none {self.work_file_path}", 
+            f"--update --tab-operation none {self.work_file_path}", 
             "utf-8")
 
     def test_trim_trailing_utf16(self):
         self.__verify(
             "a-orig-utf16.h", 
             "a-trimmed-utf16.h", 
-            f"--update --operation none {self.work_file_path}", 
+            f"--update --tab-operation none {self.work_file_path}", 
             "utf-16")
 
     def test_detab_code(self):
         self.__verify(
             "a-orig-utf8.h", 
             "a-detabbed-utf8.h", 
-            f"--update --operation detab-code --leave-trailing {self.work_file_path}", 
+            f"--update --tab-operation detab-code --leave-trailing {self.work_file_path}", 
             "utf-8")
 
     def test_entab_text(self):
         self.__verify(
             "a-orig-utf8.h", 
             "a-entabbed-utf8.h", 
-            f"--update --operation entab-text --leave-trailing {self.work_file_path}", 
+            f"--update --tab-operation entab-text --leave-trailing {self.work_file_path}", 
             "utf-8")
 
 if __name__ == '__main__':

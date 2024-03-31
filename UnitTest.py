@@ -225,7 +225,7 @@ class FileSelectUnitTest(unittest.TestCase):
         self.select = whitespace_formatter.FileSelect()
 
     def test_depth_limit_prohibits_negative_value(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(whitespace_formatter.AppException):
             self.select.depth_limit = -1
  
 class FileProcessorUnitTest(unittest.TestCase):

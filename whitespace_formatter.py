@@ -307,7 +307,7 @@ class FileSelect(object):
     @depth_limit.setter
     def depth_limit(self, to):
         if to < 0:
-            raise ValueError("Depth limit minimum is 0")
+            raise AppException("Depth limit minimum is 0")
         self.__depth_limit = bool(to)
 
     def __str__(self):
@@ -459,37 +459,21 @@ if __name__ == '__main__':
                             help="save modified files; not saved by default")
         parser.add_argument("-v", "--verbose", action="store_true", 
                             help="verbose logging")
-        # parser.add_argument("-D", "--DEBUG", action="store_true", 
-        #                     help="debug logging")
         parser.add_argument("--leave-trailing", action="store_true", 
                             help="leave any trailing whitespace; default is to trim")
         parser.add_argument("-o", "--tab-operation", metavar="NAME", default="detab-leading",
                             help=f"detab/entab operation; default: detab-leading; supported: {', '.join(supported_operations)}")
-        parser.add_argument("-t", "--tab-size", type=int, metavar="SIZE", 
+        parser.add_argument("-t", "--tab-size", type=int, metavar="SIZE", default=4,
                             help="number of spaces for a tab")
         parser.add_argument("-m", "--match", metavar="PATTERN", action='append',
-                            help="pattern to match files in a directory")
-
-        # parser.add_argument("--string-delimiter", metavar="TEXT", 
-        #                     help="text that delimits a string literal; defaults to double-quote (\")")
-        # parser.add_argument("--string-delimiter-escape", metavar="TEXT", 
-        #                     help="text that marks a string-delimiter character as _not_ a delimitor in a string literal; defaults to backslash (\\)")
-        # parser.add_argument("--string-tab", metavar="TEXT",
-        #                     help="text to replace tabs in string literals; defaults to '\\t'")
-        # parser.add_argument("--line-comment", metavar="TEXT", 
-        #                     help="text marks the start of a line comment; to the end of the line; defaults to '//'")
-        # parser.add_argument("--start-comment", metavar="TEXT", 
-        #                     help="text that delimits the start of a potentially multi-line comment; defaults to '/*'")
-        # parser.add_argument("--end-comment", metavar="TEXT", 
-        #                     help="text that delimits the end of a potentially multi-line comment; defaults to '*/'")
+                            help="pattern to match files in a directory; default is all files")
+        parser.add_argument("-d", "--depth-limit", type=int, metavar="LIMIT",
+                            help="limit to directory level searching; default is unlimited")
 
         args = parser.parse_args()
 
         logger = Logger()
         logger.is_verbose_enabled = args.verbose
-        # logger.is_debug_enabled = args.DEBUG
-
-        tab_size = args.tab_size if args.tab_size else 4
 
         line_conformer = LineConformer()
         operations = []
@@ -500,20 +484,25 @@ if __name__ == '__main__':
         if args.tab_operation == "none":
             pass
         elif args.tab_operation == "detab-leading":
-            operations.append(lambda line, log: line_conformer.detab_leading(line, log, tab_size))
+            operations.append(lambda line, log: line_conformer.detab_leading(line, log, args.tab_size))
         elif args.tab_operation == "detab-text":
-            operations.append(lambda line, log: line_conformer.detab_line(line, log, tab_size))
+            operations.append(lambda line, log: line_conformer.detab_line(line, log, args.tab_size))
         elif args.tab_operation == "detab-code":
-            operations.append(lambda line, log: line_conformer.detab_code_line(line, log, tab_size))
+            operations.append(lambda line, log: line_conformer.detab_code_line(line, log, args.tab_size))
         elif args.tab_operation == "entab-leading":
-            operations.append(lambda line, log: line_conformer.entab_leading(line, log, tab_size))
+            operations.append(lambda line, log: line_conformer.entab_leading(line, log, args.tab_size))
         elif args.tab_operation == "entab-text":
-            operations.append(lambda line, log: line_conformer.entab_line(line, log, tab_size))
+            operations.append(lambda line, log: line_conformer.entab_line(line, log, args.tab_size))
         else:
             exit(f"Operation '{args.tab_operation}' is not supported")
 
+        file_select = FileSelect()
+        if args.match != None:
+            file_select.match_patterns = args.match
+        if args.depth_limit != None:
+            file_select.depth_limit = args.depth_limit
         file_processor = FileProcessor(logger)
-        selected_files_by_path = file_processor.find_files_OLD(args.path, args.match)
+        selected_files_by_path = file_processor.find_files(args.path, file_select)
 
         file_change_count = 0
         file_error_count = 0
