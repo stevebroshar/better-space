@@ -406,8 +406,11 @@ if __name__ == '__main__':
 tab operations:
   none              Use to _only_ remove trailing whitespace
   detab-leading     Replace tabs with spaces before the first non-whitespace character
-  detab-text        Replace tabs with spaces throughout; no special treament for string literals
-  detab-code        Replace tabs with spaces throughout with special handing for string literals
+  detab-text        Replace tabs with spaces throughout; no special handing for string literals
+  detab-code        Replace tabs with spaces throughout; replace tabs in string literals with markup
+  entab-leading     Replace spaces with tabs before first non-whitespace character
+  entab-text        Replace spaces with tabls throughout; no special handing for string literals
+  entab-code        FUTURE: Replace spaces with tabs throughout while ignoring string literals
 
 note:
   Files with an unsupported encoding (such as binary files) result in failure when
