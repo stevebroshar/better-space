@@ -462,7 +462,7 @@ examples:
                             help="leave any trailing whitespace; default is to trim")
         parser.add_argument("-o", "--tab-operation", metavar="OPERATION", default="detab-leading",
                             help=f"detab/entab operation; default: detab-leading; supported: {', '.join(supported_operations)}")
-        parser.add_argument("-t", "--tab-size", type=int, metavar="SIZE", default=4,
+        parser.add_argument("-s", "--tab-size", type=int, metavar="SIZE", default=4,
                             help="number of spaces for a tab")
         parser.add_argument("-m", "--match", metavar="PATTERN", action='append',
                             help="pattern to match files in a directory; default is all files")
