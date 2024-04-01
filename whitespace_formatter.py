@@ -411,8 +411,8 @@ tab operations:
   none              Use to _only_ remove trailing whitespace
   detab-leading     Replace tabs with spaces before the first non-whitespace character
   detab-text        Replace tabs with spaces throughout; no special handing for string literals
-  detab-code        Replace tabs with spaces throughout; replace tabs in string literals with markup
-  entab-leading     Replace spaces with tabs before first non-whitespace character
+  detab-code        Replace tabs with spaces throughout; replace tabs in string literals with \\t
+  entab-leading     Replace spaces with tabs before the first non-whitespace character
 
 note:
   Files with an unsupported encoding (such as binary files) result in failure when
@@ -420,17 +420,17 @@ note:
 
 examples:
 
-  > {script_name} --update a.cpp *.h
+  > {script_name} a.cpp *.h
 
   For file a.cpp and files matching *.h, replace leading tabs with spaces and trim whitespace
   from the end of each line. Fails if a.cpp not found or no files matching *.h.
-  Overwrites modified files.
+  Displays modifcations but does not modify files.
 
   > {script_name} --update src
 
   For each text file in the directory tree src, replace leading tabs with spaces and trim
   whitespace from the end of each line. Fails if src not found, but not if it is an empty
-  directory. Overwrites modified files.
+  directory. Overwrites files with any modificaitons.
 
   > {script_name} --match *.js --match *.html src
 
@@ -448,7 +448,7 @@ examples:
   > {script_name} a.c --tab-operation detab-code
 
   Replace tabs with spaces throughout the file except for string literals where tabs are replaced
-  with markup (\\t by default).
+  with escape sequence (\\t).
 
   > {script_name} a.c --tab-operation entab-leading
 
