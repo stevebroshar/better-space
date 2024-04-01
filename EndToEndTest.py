@@ -28,6 +28,11 @@ class EndToEndTest(unittest.TestCase):
             return f.read()
         
     def __verify(self, src_file_name, expected_file_name, command, encoding):
+        '''
+        Copies source file to temp/test path, runs command on it then compares (possibly modified)
+        file to the expected content.
+        If the test fails, determining what's wrong is not easy :(
+        '''
         src_file = self.__get_test_path(src_file_name)
         shutil.copyfile(src_file, self.work_file_path)
         self.__run_script(command)
@@ -70,11 +75,11 @@ class EndToEndTest(unittest.TestCase):
             f"--update --tab-operation detab-code --leave-trailing {self.work_file_path}", 
             "utf-8")
 
-    def test_entab_text(self):
+    def test_entab_leading(self):
         self.__verify(
             "a-orig-utf8.h", 
-            "a-entabbed-utf8.h", 
-            f"--update --tab-operation entab-text --leave-trailing {self.work_file_path}", 
+            "a-entabbed-leading-utf8.h", 
+            f"--update --tab-operation entab-leading --leave-trailing {self.work_file_path}", 
             "utf-8")
 
 if __name__ == '__main__':

@@ -232,15 +232,19 @@ class LineConformer(object):
     def entab_leading(self, line, log_change, tab_size):
         '''Replaces spaces in leading whitespace with tabs according to tab stops spaced equally by tab_size'''
         leading_whitespace, post_leading = self.__split_leading_whitespace(line)
-        new_leading = self.entab_line(leading_whitespace, log_change, tab_size)
+        new_leading = self.__entab_line(leading_whitespace, log_change, tab_size)
         return new_leading + post_leading
     
-    def entab_line(self, line, log_change, tab_size):
-        '''Replaces spaces with tabs according to tab stops spaced equally by tab_size'''
+    def __entab_line(self, line, log_change, tab_size):
+        '''
+        Replaces spaces with tabs according to tab stops spaced equally by tab_size.
+
+        This was originally written to handle all file content, but that is too
+        programmer-opinionated to automate. So, this is only used for leading text.
+        '''
         out_line = io.StringIO()
         logical_len = 0
         space_count = 0
-        in_tab_whitespace = False
         for c in line:
             if self.__debugging: self.__log_debug(f"logical length: {logical_len}")
             if c == SPACE:
@@ -267,14 +271,12 @@ class LineConformer(object):
                 space_count = 0
                 spaces_to_next_tab_stop = tab_size - logical_len % tab_size
                 logical_len += spaces_to_next_tab_stop
-                in_tab_whitespace = True
             else:
                 if self.__debugging: self.__log_debug(f"char '{c}'")
                 out_line.write(SPACE*space_count)
                 out_line.write(c)
                 space_count = 0
                 logical_len += 1
-                in_tab_whitespace = False
         return out_line.getvalue()
     
 class FileSelect(object):
@@ -393,8 +395,10 @@ if __name__ == '__main__':
         "detab-text",
         "detab-code",
         "entab-leading",
-        "entab-text",
-        # "entab-code"]
+        #"entab-text",
+        #"entab-code",
+#   entab-text        Replace spaces with tabls throughout; no special handing for string literals
+#   entab-code        FUTURE: Replace spaces with tabs throughout while ignoring string literals
     ]
     script_name = os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]
     try:
@@ -409,8 +413,6 @@ tab operations:
   detab-text        Replace tabs with spaces throughout; no special handing for string literals
   detab-code        Replace tabs with spaces throughout; replace tabs in string literals with markup
   entab-leading     Replace spaces with tabs before first non-whitespace character
-  entab-text        Replace spaces with tabls throughout; no special handing for string literals
-  entab-code        FUTURE: Replace spaces with tabs throughout while ignoring string literals
 
 note:
   Files with an unsupported encoding (such as binary files) result in failure when

@@ -2,7 +2,7 @@
 
 Python command line tool for managing whitespace in a source code files: replacing tabs with spaces, tabs with spaces and removing whitespace at the end of lines.
 
-TBO I hate tabs in code files. I would never replace spaces with tabs. But, I did try to make that feature usable none-the-less.
+All you need is Python 3 installed and the `whitespace_formatter.py` script file.
 
 [TOC]
 
@@ -16,11 +16,47 @@ TBO I hate tabs in code files. I would never replace spaces with tabs. But, I di
 
 # Features
 
-- Supports UTF-8 and UTF-16; for other formats (including binary) fails if specified by path (even via wildcard) or ignoring if matched in directory search.
-- Trim trailing whitespace; robust for any text file
-- De-tab or en-tab leading text; robust for any text file
-- De-tab or en-tab the content of a text file without special handling for string literals which is problematic for source files with tabs in string literals
-- De-tab code with (non-raw) string literals like C, C++, C# and Python but a dissimilar string literal would be problematic. What are other string literal syntax?
+## Platform independent
+
+As a Python script, this runs on any platform that supports Python -- which is alot!
+
+## Common file encodings
+
+Supports UTF-8 and UTF-16; for other formats (including binary) fails if specified by path (even via wildcard) or ignoring if matched in directory search.
+
+## Trailing whitespace trimming
+
+Trims trailing whitespace.
+
+## Detabbing
+
+One mode, detabs indentation (leading) text only which is robust for any text file.
+
+Another mode supports detabbing the entire content of a text file without special handling of source code string literals which is problematic for string literals that contains a tab characters. The tab characters will be replaced with spaces which affects the resulting behavior of the code. But, it's relatively rare for string literals to be programmed with tab characters. So, low likelihood of happening, but if it does then high likelihood of introducing a bug.
+
+Another mode handles string literals with the commonly used syntax of C, C++, C#, Python and other languages with similar string literals. In this mode, a tab character is replaced with the tab escape sequence (\t).
+
+## Entabbing
+
+One mode supports entabbing indentation (leading) text which is robust for any text file.
+
+Entabbing non-indentation text is not supported since that such internal tabbing is based the opinion of an author. For example, consider the following lines:
+
+`int a;      // this is a`
+`int b;      // this is b`
+`short c;    // this is c`
+
+Typically, an author would use tabs between each line's semi-colon and comment start so that the comments line up as a column. But, consider the space before 'a' and 'b'. An author typically would _not_ use a tab there, but an entabbing algorithm might since these variable names start at a tab stop (for 4-space tab stops). The algorithm could avoid replacing a single space with a tab, but is 2 spaces enough? Can contrive an example where 2 spaces as the same issue. 
+
+Maybe only replace spaces with tabs if the number of spaces is greater than or equal to the tab size. This would probably result in code that is aligned the same as the code before modification. But, the result would be less than clean.
+
+(for clarity spaces shown as dot (.) and tabs as 'T' and tab size is 4):
+
+For example, this line would not be modified: `int a;..// this is a` even though the two spaces could be replaced with a tab.
+
+For example, this line: `int a;......// this is a` would be modified to `int a;..T// this is a` even though it could be `int a;TT// this is a`.
+
+Maybe the algorithm looks for column across multiple lines, but this is a much more complicated algorithm and also suffers from opinionated results.
 
 ## String Literals
 
@@ -49,6 +85,50 @@ Unit test:
 End-to-end test:
 
 > python EndToEndTest.py
+
+# Use
+
+Requires: Python 3; nothing else! no additional libraries.
+
+See command-line help:
+
+> python whitespace_formatter.py -h
+
+By default, only prints changes that would be made. Some tools call this *dry-run* or *preview*. Include `--update` to overwrite files with modified content.
+
+If you are not using source control (i.e. git), then you should backup your files before updating files.
+
+# Use cases
+
+This tool shines when formatting multiple files and especially many files such as a directory tree. It is great for a one-time, project-wide update. It is of course can be used for just one file too.
+
+Other tools provide single file (and selection) whitespace conversion; some integrated into an editor such as VSCode and Notepad++. This is convenient since you don't have to leave the editor, but to date have not seen an editor-integrated feature that processes more than just one file at a time. To process many files, i.e. all of the files a project, would be tedious and error prone.
+
+Other tools provide command-line and multiple file support. Seem to all be platform specific and tend to be cryptic or significantly less functional.
+
+# Similar tools
+
+A review of other tools with similar capabilities:
+
+**Notepad++**: Ctrl+A, **Edit>Blank Operations>Tab to Spaces**, one file at a time (not dir/tree), not command line
+
+**VSCode**: Command: **Convert indentation to Tabs**, one file at a time (not dir/tree), not command line
+
+**Visual Studio**: File: Ctrl+K, Ctrl+D *indents* a file. Ctrl+K, Ctrl+F *indents* a selection, one file at a time; not project/directory/tree, 
+
+**Eclipse**: Ctrl+Shift+F *formats* a file
+
+**expand**: `expand -i -t 4 input | sponge output`, linux specific, flexible and powerful but high cognitive load
+
+**vim**: `set ts=4, set expandtab, retab` flexible and powerful but high cognitive load
+
+[**Artistic Style**](https://astyle.sourceforge.net/) ??
+
+[**Tabs to Spaces** (online)](https://tabstospaces.com/), platform independent (since online), one chunk of code at a time (not dir/tree)
+
+[**EnTabFile** - *a Windows tool to EnTab a source file*](https://www.matthew-jones.com/download/entab-windows.html) command line (how does it select fiels?) indentation only, Windows-specific what version of Windows?, handles string literals? Supports UTF8? UTF16? Can change indentation ("if there are 6 spaces and the tab setting is 4, then 2 tabs will be output")
+
+[**tabs-to-spaces**](https://github.com/stephenmathieson/tabs-to-spaces) seems very limited functionality
 
 # Changes
 
