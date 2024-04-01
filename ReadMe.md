@@ -16,11 +16,11 @@ TBO I hate tabs in code files. I would never replace spaces with tabs. But, I di
 
 # Features
 
-- Supports UTF-8 and UTF-16 and detects and handles other formats (including binary) by either failing if specified by path or ignoring if matched in directory search.
+- Supports UTF-8 and UTF-16; for other formats (including binary) fails if specified by path (even via wildcard) or ignoring if matched in directory search.
 - Trim trailing whitespace; robust for any text file
 - De-tab or en-tab leading text; robust for any text file
 - De-tab or en-tab the content of a text file without special handling for string literals which is problematic for source files with tabs in string literals
-- De-tab code with (non-raw) string literals like C, C++, C# and Python but dissimilar string literals are problematic
+- De-tab code with (non-raw) string literals like C, C++, C# and Python but a dissimilar string literal would be problematic. What are other string literal syntax?
 
 ## String Literals
 
@@ -54,7 +54,7 @@ End-to-end test:
 
 ## Version 1
 
-...
+TBD
 
 ## TODO
 
@@ -63,4 +63,6 @@ Support en-tabbing code; with special handling for string literals. Probably jus
 For detab, allow leaving tabs in string literals; ignoring the content of string literals
 
 For entab (line), currently too aggressive in that any space that happens to fall at end of a tab stop is replaced with a tab. This is often not desirable such as in a comment string or even in a line of code that is not formatted as columnized multiple lines. Could ignore comment text but that requires parsing comments. Could ignore replacing spaces with tab if code is not-columnized, but that seems hard to detect.
+
+Maybe: smart string literal handling based on file type. If file has certain extensions (.c, cpp, .cs and the many versions of C++ extensions) then use C-style string literal handling.
 
