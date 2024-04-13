@@ -4,6 +4,18 @@ Command line tool for formatting source code files; to manage whitespace in a co
 
 Supports replacing tabs with spaces, tabs with spaces and removing whitespace at the end of lines.
 
+Accurately converts between tabs and spaces -- even when a column contains both spaces and a tab. Detects and ignores binary files. Handles UTF-8 and UTF-16.
+
+## Pitch
+
+This tool shines when formatting many files such as a directory tree; a source tree. It is great for a one-time, project-wide update. It of course can be used for just one file too.
+
+The tool is focused on whitespace and as such (hopefully) won't make changes that a full code formatter would. But, if you want full code formatting then this is not for you.
+
+Other tools provide single file and selection whitespace conversion; some integrated into an editor such as VSCode or Notepad++. These are convenient since it's GUI and can be done without leaving your development environment, but to date have not found an integrated feature that processes more than just one file at a time. To process many files, i.e. all of the files of a project, would be tedious and error prone.
+
+Other tools provide command-line and multiple file support, but they have severe limitations such as: platform specific, cryptic or significantly less functional/accurate/robust.
+
 [TOC]
 
 # Getting Started
@@ -96,16 +108,6 @@ Unit test:
 End-to-end test:
 
 > python EndToEndTest.py
-
-# Use cases
-
-This tool shines when formatting many files such as a directory tree. It is great for a one-time, project-wide update. It is of course can be used for just one file too.
-
-The tool is focused on whitespace and as such (hopefully) won't make changes that a full code formatter would. But, if you want full code formatting then this is not for you.
-
-Other tools provide single file and selection whitespace conversion; some integrated into an editor such as VSCode and Notepad++. This is convenient since you don't have to leave the editor, but to date have not seen an editor-integrated feature that processes more than just one file at a time. To process many files, i.e. all of the files a project, would be tedious and error prone.
-
-Other tools provide command-line and multiple file support. Seem to all be platform specific and tend to be cryptic or significantly less functional.
 
 # Review of competing technologies
 
