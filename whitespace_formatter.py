@@ -389,30 +389,21 @@ class FileProcessor(object):
         return None
     
 if __name__ == '__main__':
-    supported_operations = [
-        "none",
-        "detab-leading",
-        "detab-text",
-        "detab-code",
-        "entab-leading",
-        #"entab-text",
-        #"entab-code",
-#   entab-text        Replace spaces with tabls throughout; no special handing for string literals
-#   entab-code        FUTURE: Replace spaces with tabs throughout while ignoring string literals
+    supported_operation_infos = [
+        ("none", "Use to _only_ remove trailing whitespace"),
+        ("detab-leading", "Replace tabs with spaces before the first non-whitespace character"),
+        ("detab-text", "Replace tabs with spaces throughout; no special handing for string literals"),
+        ("detab-code", "Replace tabs with spaces throughout; replace tabs in string literals with \\t"),
+        ("entab-leading", "Replace spaces with tabs before the first non-whitespace character"),
+       #("entab-text" "Replace spaces with tabls throughout; no special handing for string literals"),
+       #("entab-code" "FUTURE: Replace spaces with tabs throughout while ignoring string literals"),
     ]
+    supported_operations = [i[0] for i in supported_operation_infos]
+    op_field_width = len(max(supported_operations, key=len)) + 2
+    tab_operations_help = "".join([f'\n  {i[0]:{op_field_width}}{i[1]}' for i in supported_operation_infos])
     script_name = os.path.splitext(os.path.basename(os.path.abspath(__file__)))[0]
-    try:
-        parser = argparse.ArgumentParser(
-            #formatter_class=argparse.RawTextHelpFormatter,
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-            description="Modifies text files to replace tabs with spaces (or vise versa), trims whitespace from the end of each line and replaces tabs in string literals",
-            epilog=f"""
-tab operations:
-  none              Use to _only_ remove trailing whitespace
-  detab-leading     Replace tabs with spaces before the first non-whitespace character
-  detab-text        Replace tabs with spaces throughout; no special handing for string literals
-  detab-code        Replace tabs with spaces throughout; replace tabs in string literals with \\t
-  entab-leading     Replace spaces with tabs before the first non-whitespace character
+    epilog = f"""
+tab operations:{tab_operations_help}
 
 note:
   Files with an unsupported encoding (such as binary files) result in failure when
@@ -453,7 +444,13 @@ examples:
   > {script_name} a.c --tab-operation entab-leading
 
   Replace leading spaces with tabs and trim whitespace from the end of each line.
-    """)
+  """
+    try:
+        parser = argparse.ArgumentParser(
+            #formatter_class=argparse.RawTextHelpFormatter,
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            description="Modifies text files to replace tabs with spaces (or vise versa), trims whitespace from the end of each line and replaces tabs in string literals",
+            epilog=epilog)
         parser.add_argument("path", nargs="+", 
                             help="file or directory to process")
         parser.add_argument("-u", "--update", action="store_true", 
