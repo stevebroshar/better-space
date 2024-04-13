@@ -1,10 +1,26 @@
 # Whitespace Formatter
 
-Python command line tool for managing whitespace in a source code files: replacing tabs with spaces, tabs with spaces and removing whitespace at the end of lines.
+Command line tool for formatting source code files; to manage whitespace in a codebase.
 
-All you need is Python 3 installed and the `whitespace_formatter.py` script file.
+Supports replacing tabs with spaces, tabs with spaces and removing whitespace at the end of lines.
 
 [TOC]
+
+# Getting Started
+
+Requirements: Python 3; nothing else! no additional libraries.
+
+Install Python 3 if not already
+
+Download and run the single script file `whitespace_formatter.py`.
+
+See command-line help:
+
+> python whitespace_formatter.py -h
+
+By default, only prints changes that would be made. Some tools call this *dry-run* or *preview*. Include `--update` to overwrite files with modified content.
+
+If you are not using source control (i.e. git), then you should backup your files before updating files.
 
 # Terms
 
@@ -12,7 +28,6 @@ All you need is Python 3 installed and the `whitespace_formatter.py` script file
 - en-tab: replace spaces with tabs
 - leading whitespace: space and tab characters before first non-whitespace char of a line
 - trailing whitespace: space and tab characters after last non-whitespace char of a line
-- code: source code
 
 # Features
 
@@ -72,10 +87,6 @@ For en-tabbing, the content of a string literal is left as-is.
 
 The tool relies on Python's universal new line support that reads (splits lines) based any new line sequence (/n, /r, /r/n) and writes (joins lines) using the platform default sequence. This does mean that if the input does not use the platform default sequence, then an updated file will differ since it will use the platform default.
 
-# Technologies
-
-Python 3
-
 # Test
 
 Unit test:
@@ -86,55 +97,81 @@ End-to-end test:
 
 > python EndToEndTest.py
 
-# Use
-
-Requires: Python 3; nothing else! no additional libraries.
-
-See command-line help:
-
-> python whitespace_formatter.py -h
-
-By default, only prints changes that would be made. Some tools call this *dry-run* or *preview*. Include `--update` to overwrite files with modified content.
-
-If you are not using source control (i.e. git), then you should backup your files before updating files.
-
 # Use cases
 
-This tool shines when formatting multiple files and especially many files such as a directory tree. It is great for a one-time, project-wide update. It is of course can be used for just one file too.
+This tool shines when formatting many files such as a directory tree. It is great for a one-time, project-wide update. It is of course can be used for just one file too.
 
-Other tools provide single file (and selection) whitespace conversion; some integrated into an editor such as VSCode and Notepad++. This is convenient since you don't have to leave the editor, but to date have not seen an editor-integrated feature that processes more than just one file at a time. To process many files, i.e. all of the files a project, would be tedious and error prone.
+The tool is focused on whitespace and as such (hopefully) won't make changes that a full code formatter would. But, if you want full code formatting then this is not for you.
+
+Other tools provide single file and selection whitespace conversion; some integrated into an editor such as VSCode and Notepad++. This is convenient since you don't have to leave the editor, but to date have not seen an editor-integrated feature that processes more than just one file at a time. To process many files, i.e. all of the files a project, would be tedious and error prone.
 
 Other tools provide command-line and multiple file support. Seem to all be platform specific and tend to be cryptic or significantly less functional.
 
-# Similar tools
+# Review of competing technologies
 
-A review of other tools with similar capabilities:
+A review of other tools with similar capabilities.
 
-**Notepad++**: Ctrl+A, **Edit>Blank Operations>Tab to Spaces**, one file at a time (not dir/tree), not command line
+## Editor/IDE Integrated
 
-**VSCode**: Command: **Convert indentation to Tabs**, one file at a time (not dir/tree), not command line
+**Notepad++** (text editor): Ctrl+A, **Edit>Blank Operations>Tab to Spaces**, one file at a time (not dir/tree), not command line
 
-**Visual Studio**: File: Ctrl+K, Ctrl+D *indents* a file. Ctrl+K, Ctrl+F *indents* a selection, one file at a time; not project/directory/tree, 
+**VSCode** (IDE): Command: **Convert indentation to Tabs**, one file at a time (not dir/tree), not command line
 
-**Eclipse**: Ctrl+Shift+F *formats* a file
+**Visual Studio** (IDE): File: Ctrl+K, Ctrl+D *indents* a file. Ctrl+K, Ctrl+F *indents* a selection, one file at a time; not directory/tree, 
 
-**expand**: `expand -i -t 4 input | sponge output`, linux specific, flexible and powerful but high cognitive load
+**Eclipse** (IDE): Ctrl+Shift+F *formats* a file
 
-**vim**: `set ts=4, set expandtab, retab` flexible and powerful but high cognitive load
+## General purpose tools
 
-[**Artistic Style**](https://astyle.sourceforge.net/) ??
+**expand** (*nix CLI)
 
-[**Tabs to Spaces** (online)](https://tabstospaces.com/), platform independent (since online), one chunk of code at a time (not dir/tree)
+- Syntax:  `expand -i -t 4 input | sponge output`
+- Pluses: Flexible and powerful 
+- Limitations: *nix-specific, high cognitive load
 
-[**EnTabFile** - *a Windows tool to EnTab a source file*](https://www.matthew-jones.com/download/entab-windows.html) command line (how does it select fiels?) indentation only, Windows-specific what version of Windows?, handles string literals? Supports UTF8? UTF16? Can change indentation ("if there are 6 spaces and the tab setting is 4, then 2 tabs will be output")
+**vim** (*nix CLI)
 
-[**tabs-to-spaces**](https://github.com/stephenmathieson/tabs-to-spaces) seems very limited functionality
+- Syntax: `set ts=4, set expandtab, retab`
+- Pluses: Flexible and powerful
+- Limitations: *nix-specific, high cognitive load
+
+## Special purpose
+
+[**Tabs to Spaces**](https://tabstospaces.com/) (web page)
+
+- Tagline: *Replace tabs with spaces. Perfect for copying code snippets to markdown.*
+- Pluses: Platform independent since online
+- Limitations: One chunk of code at a time (not dir/tree)
+
+[**tabspace**](https://tools.stefankueng.com/tabspace.html) (Windows CLI)
+
+- Tagline: *Converts tabs to spaces or spaces to tabs automatically in files. It also removes spaces at the end of lines.*
+- Pluses: Accurate; handles column with both spaces and tab
+- Limitations: Windows-specific; dangerous command line syntax since modifies files by default; with no arguments
+- [Reviews](https://sourceforge.net/projects/stefanstools/reviews/)
+
+[**EnTabFile**](https://www.matthew-jones.com/download/entab-windows.html) (Windows CLI)
+
+- Tagline: *a Windows tool to EnTab a source file*. 
+
+- Limitations: Command line (how does it select files?) indentation only, Windows-specific what version of Windows?, handles string literals? Supports UTF8? UTF16? Can change indentation ("if there are 6 spaces and the tab setting is 4, then 2 tabs will be output")
+
+[**tabs-to-spaces**](https://github.com/stephenmathieson/tabs-to-spaces) (C code; maybe *nix CLI)
+
+- Tagline: *Convert tabs to spaces*. 
+- Limitations: Seems very limited overall
+
+[**Artistic Style**](https://astyle.sourceforge.net/) (CLI)
+
+- Tagline: *A Free, Fast, and Small Automatic Formatter for C, C++, C++/CLI, Objective-C, C#, and Java Source Code*
+- Pluses: Multi-platform although only Windows app is pre-built
+- Limitations: The rich feature set leads to high learning curve to use; if only wanting converts whitespace this is probably too much work to learn and use; might cause undesirable code changes since formats all the code; not just whitespace
 
 # Changes
 
 ## Version 1
 
-TBD
+Initial version
 
 ## TODO
 
@@ -146,3 +183,18 @@ For entab (line), currently too aggressive in that any space that happens to fal
 
 Maybe: smart string literal handling based on file type. If file has certain extensions (.c, cpp, .cs and the many versions of C++ extensions) then use C-style string literal handling.
 
+Choose better name. Ideas:
+
+- Whitespace Editor
+- editws
+- wsedit
+- wsed
+- w-edit
+- wedit
+- whedit
+- tabit
+- detabit
+- utabit
+- tabilizer
+- tabster
+- tabolicious
