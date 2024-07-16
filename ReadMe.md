@@ -185,4 +185,4 @@ For entab (line), currently too aggressive in that any space that happens to fal
 
 Maybe: smart string literal handling based on file type. If file has certain extensions (.c, cpp, .cs and the many versions of C++ extensions) then use C-style string literal handling.
 
-Choose better name. How about: FreeSpace, AdjustWS, NegativeSpace, PositiveSpace, PositiveWhiteSpace.
+Choose better name. How about: FreeSpace, AdjustWS, PositiveSpace, PositiveWhiteSpace, CoolSpace, BetterSpace, WorkSpace
