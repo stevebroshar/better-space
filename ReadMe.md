@@ -1,6 +1,6 @@
 # Whitespace Formatter
 
-Command line tool for formatting source code files to manage whitespace; use of tab vs. space characters.
+Command line tool for formatting whitespace in source code files; use of tab vs. space characters.
 
 Supports replacing tabs with spaces, tabs with spaces and removing whitespace at the end of lines.
 
@@ -185,4 +185,4 @@ For entab (line), currently too aggressive in that any space that happens to fal
 
 Maybe: smart string literal handling based on file type. If file has certain extensions (.c, cpp, .cs and the many versions of C++ extensions) then use C-style string literal handling.
 
-Choose better name. How about: FreeSpace
+Choose better name. How about: FreeSpace, AdjustWS, NegativeSpace, PositiveSpace, PositiveWhiteSpace.
