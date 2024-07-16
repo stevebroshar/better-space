@@ -1,18 +1,18 @@
 # Whitespace Formatter
 
-Command line tool for formatting source code files; to manage whitespace in a codebase.
+Command line tool for formatting source code files to manage whitespace; use of tab vs. space characters.
 
 Supports replacing tabs with spaces, tabs with spaces and removing whitespace at the end of lines.
 
-Accurately converts between tabs and spaces -- even when a column contains both spaces and a tab. Detects and ignores binary files. Handles UTF-8 and UTF-16.
+Accurately converts between tabs and spaces -- even when a tab-column contains both spaces and a tab. Detects and ignores binary files. Handles UTF-8 and UTF-16.
 
 ## Pitch
 
 This tool shines when formatting many files such as a directory tree; a source tree. It is great for a one-time, project-wide update. It of course can be used for just one file too.
 
-The tool is focused on whitespace and as such (hopefully) won't make changes that a full code formatter would. But, if you want full code formatting then this is not for you.
+This tool is focused on whitespace. If what you want more broad-scope code formatting, then this may not be for you.
 
-Other tools provide single file and selection whitespace conversion; some integrated into an editor such as VSCode or Notepad++. These are convenient since it's GUI and can be done without leaving your development environment, but to date have not found an integrated feature that processes more than just one file at a time. To process many files, i.e. all of the files of a project, would be tedious and error prone.
+Other whitespace tools provide single file or code snippit whitespace conversion; some integrated into an editor such as VSCode or Notepad++. These are convenient since it's GUI and can be done without leaving your development environment, but to date have not found an integrated feature that processes more than just one file at a time. To process many files, i.e. all of the files of a project, would be tedious and error prone.
 
 Other tools provide command-line and multiple file support, but they have severe limitations such as: platform specific, cryptic or significantly less functional/accurate/robust.
 
@@ -185,18 +185,4 @@ For entab (line), currently too aggressive in that any space that happens to fal
 
 Maybe: smart string literal handling based on file type. If file has certain extensions (.c, cpp, .cs and the many versions of C++ extensions) then use C-style string literal handling.
 
-Choose better name. Ideas:
-
-- Whitespace Editor
-- editws
-- wsedit
-- wsed
-- w-edit
-- wedit
-- whedit
-- tabit
-- detabit
-- utabit
-- tabilizer
-- tabster
-- tabolicious
+Choose better name. How about: FreeSpace
