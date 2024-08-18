@@ -103,11 +103,11 @@ The tool relies on Python's universal new line support that reads (splits lines)
 
 Unit test:
 
-> python UnitTest.py
+> python unit-test.py
 
 End-to-end test:
 
-> python EndToEndTest.py
+> python end-to-end-test.py
 
 # Review of competing technologies
 
