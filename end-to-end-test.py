@@ -14,7 +14,7 @@ class EndToEndTest(unittest.TestCase):
 
     # NOTE: result.stdout and stderr may be interesting
     def __run_script(self, command):
-        full_command = f"python whitespace_formatter.py {command}";
+        full_command = f"python better-space.py {command}";
         result = subprocess.run(full_command, text=True, capture_output=True)
         if result.returncode != 0:
             raise RuntimeError(f"Error code ({result.returncode}) from command: {full_command}\r{result.stderr}")

@@ -1,4 +1,4 @@
-import whitespace_formatter
+better_space = python_code = __import__('better-space')
 import shutil
 import os
 import unittest
@@ -6,7 +6,7 @@ import unittest
 TAB = "\t"
 SPACE = " "
 
-class FakeLogger(whitespace_formatter.Logger):
+class FakeLogger(better_space.Logger):
     def __init__(self):
         super().__init__()
         self.entries = []
@@ -16,7 +16,7 @@ class FakeLogger(whitespace_formatter.Logger):
 
 class LineConformerUnitTest(unittest.TestCase):
     def setUp(self):
-        self.conformer = whitespace_formatter.LineConformer()
+        self.conformer = better_space.LineConformer()
         self.log = lambda message: message
 
     #
@@ -158,7 +158,7 @@ class LineConformerUnitTest(unittest.TestCase):
 
 class FileConformerUnitTest(unittest.TestCase):
     def setUp(self):
-        self.conformer = whitespace_formatter.FileConformer(FakeLogger())
+        self.conformer = better_space.FileConformer(FakeLogger())
         self.test_file_path = "__testfile"
 
     def tearDown(self):
@@ -219,15 +219,15 @@ class FileConformerUnitTest(unittest.TestCase):
 
 class FileSelectUnitTest(unittest.TestCase):
     def setUp(self):
-        self.select = whitespace_formatter.FileSelect()
+        self.select = better_space.FileSelect()
 
     def test_depth_limit_prohibits_negative_value(self):
-        with self.assertRaises(whitespace_formatter.AppException):
+        with self.assertRaises(better_space.AppException):
             self.select.depth_limit = -1
  
 class FileProcessorUnitTest(unittest.TestCase):
     def setUp(self):
-        self.processor = whitespace_formatter.FileProcessor(FakeLogger())
+        self.processor = better_space.FileProcessor(FakeLogger())
         self.test_dir_path = "__testdir"
         self.test_file_path = self.__get_test_file_path("a")
         self.tearDown()
@@ -266,7 +266,7 @@ class FileProcessorUnitTest(unittest.TestCase):
         self.assertEqual(0, len(file_paths))
 
     def test_find_files_fails_for_no_match(self):
-        self.assertRaises(whitespace_formatter.AppException, self.processor.find_files, ["notthere"])
+        self.assertRaises(better_space.AppException, self.processor.find_files, ["notthere"])
 
     def test_find_files_finds_file_by_name(self):
         self.__create_file(self.test_file_path)
@@ -300,7 +300,7 @@ class FileProcessorUnitTest(unittest.TestCase):
         file_path_b = self.__get_test_file_path("a.h")
         self.__create_file(file_path_a)
         self.__create_file(file_path_b)
-        file_select = whitespace_formatter.FileSelect()
+        file_select = better_space.FileSelect()
         file_select.match_patterns = ["*.c"]
 
         file_paths = self.processor.find_files([self.test_dir_path], file_select)
@@ -312,7 +312,7 @@ class FileProcessorUnitTest(unittest.TestCase):
         file_path_b = self.__get_test_file_path("a.h")
         self.__create_file(file_path_a)
         self.__create_file(file_path_b)
-        file_select = whitespace_formatter.FileSelect()
+        file_select = better_space.FileSelect()
         file_select.match_patterns = ["*.c", "a.*"]
         
         file_paths = self.processor.find_files([self.test_dir_path], file_select)
@@ -322,7 +322,7 @@ class FileProcessorUnitTest(unittest.TestCase):
     def test_find_files_fails_for_binary_file(self):
         self.__write_binary_file(self.test_file_path)
         
-        self.assertRaises(whitespace_formatter.AppException, self.processor.find_files, [self.test_file_path])
+        self.assertRaises(better_space.AppException, self.processor.find_files, [self.test_file_path])
 
     def test_find_files_does_not_match_binary_file(self):
         self.__write_binary_file(self.test_file_path)
@@ -350,7 +350,7 @@ class FileProcessorUnitTest(unittest.TestCase):
         self.__create_file(child_dir_file_path)
         self.__create_file(child_dir_file_path + ".a")
         self.__create_file(child_dir_file_path + ".b")
-        file_select = whitespace_formatter.FileSelect()
+        file_select = better_space.FileSelect()
         file_select.match_patterns = ["*.ext"]
         
         file_paths = self.processor.find_files([self.test_dir_path], file_select)
@@ -382,7 +382,7 @@ class FileProcessorUnitTest(unittest.TestCase):
         self.__create_file(root_file_path)
         self.__create_file(child_dir_file_path)
         self.__create_file(grandchild_dir_file_path)
-        file_select = whitespace_formatter.FileSelect()
+        file_select = better_space.FileSelect()
         file_select.depth_limit = 0
         
         file_paths = self.processor.find_files([self.test_dir_path], file_select)
@@ -399,7 +399,7 @@ class FileProcessorUnitTest(unittest.TestCase):
         self.__create_file(root_file_path)
         self.__create_file(child_dir_file_path)
         self.__create_file(grandchild_dir_file_path)
-        file_select = whitespace_formatter.FileSelect()
+        file_select = better_space.FileSelect()
         file_select.depth_limit = 1
         
         file_paths = self.processor.find_files([self.test_dir_path], file_select)
