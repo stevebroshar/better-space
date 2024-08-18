@@ -167,7 +167,7 @@ A review of other tools with similar capabilities.
 
 - Tagline: *A Free, Fast, and Small Automatic Formatter for C, C++, C++/CLI, Objective-C, C#, and Java Source Code*
 - Pluses: Multi-platform although only Windows app is pre-built
-- Limitations: The rich feature set leads to high learning curve to use; if only wanting converts whitespace this is probably too much work to learn and use; might cause undesirable code changes since formats all the code; not just whitespace
+- Limitations: The rich feature set leads to high learning curve to use; if only wanting to convert whitespace, this is probably too much work to learn; might cause undesirable code changes since formats all the code; not just whitespace
 
 # Changes
 
@@ -175,7 +175,7 @@ A review of other tools with similar capabilities.
 
 Initial version
 
-## TODO
+## Proposed enhancements
 
 Support en-tabbing code; with special handling for string literals. Probably just ignore string literals; don't replace spaces with tabs since that could change behavior of the code.
 
@@ -185,4 +185,6 @@ For entab (line), currently too aggressive in that any space that happens to fal
 
 Maybe: smart string literal handling based on file type. If file has certain extensions (.c, cpp, .cs and the many versions of C++ extensions) then use C-style string literal handling.
 
-Names considered: FreeSpace, AdjustWS, PositiveSpace, PositiveWhiteSpace, CoolSpace, BetterSpace, WorkSpace
+# Notes
+
+Names considered: FreeSpace, AdjustWS, PositiveSpace, PositiveWhiteSpace, CoolSpace, BetterSpace, WorkSpace, whitespace_formatter
