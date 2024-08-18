@@ -24,11 +24,11 @@ Requirements: Python 3; nothing else! no additional libraries.
 
 Install Python 3 if not already
 
-Download and run the single script file `whitespace_formatter.py`.
+Download and run the single script file `better-space.py`.
 
 See command-line help:
 
-> python whitespace_formatter.py -h
+> python better-space.py -h
 
 By default, only prints changes that would be made. Some tools call this *dry-run* or *preview*. Include `--update` to overwrite files with modified content.
 
